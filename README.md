@@ -111,7 +111,7 @@ The dataset uses synthetic names and `example.invalid` email only. Money values 
 
 ## Deployment
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for a Vercel/Node checklist, environment variables, migration guidance, health checks, rollback, and post-deploy verification. Target-environment acceptance requires an authorized maintainer with real environment access; documentation alone does not prove a deployment succeeded.
+Vercel deployment is configured through `vercel.json` (`npm ci`, `npm run build`, Next.js framework preset) and `package.json` (`engines.node >=20.9.0`). Before deploying, run `npm run deploy:check` with production values loaded; it reports missing/invalid variable names only and never prints secret values. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full checklist, environment variables, migration guidance, health checks, rollback, and post-deploy verification. Target-environment acceptance requires an authorized maintainer with real environment access; documentation alone does not prove a deployment succeeded.
 
 ## Security
 

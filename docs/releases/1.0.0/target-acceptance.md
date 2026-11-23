@@ -11,6 +11,7 @@ All credentials, session tokens, dev-browser tokens, connection strings, and Cle
 | Check | Result |
 | --- | --- |
 | Local build/typecheck/lint/tests/coverage | PASS |
+| Vercel deployment readiness (local config + safe env preflight) | PASS - see `deployment-readiness.md` |
 | Anti-slop DURING review gate | PASS |
 | Live Supabase migration status | PASS |
 | Live Supabase schema + seed rows | PASS |
@@ -60,6 +61,7 @@ Current final results after the Midnight redesign, the `theme-provider.tsx` dark
 - `npm run build`: PASS - 19 pages/routes emitted.
 - `npm audit --audit-level=high`: PASS - 0 vulnerabilities.
 
+Vercel deployment-readiness evidence is in `docs/releases/1.0.0/deployment-readiness.md`.
 Currency and date regression evidence is in `docs/releases/1.0.0/currency-and-date-fixes.tdd.md`.
 Multilingual and global redesign evidence is in `docs/releases/1.0.0/multilingual-global-redesign.tdd.md`.
 Visible all-page redesign plus the superseding Slate and current Midnight evidence are in `docs/releases/1.0.0/visible-redesign.tdd.md`.

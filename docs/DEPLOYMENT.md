@@ -5,8 +5,10 @@ This document describes a deployment **procedure** for MonMag on Vercel or a sel
 ## Scope and preconditions
 
 - Code is merged to the branch you intend to deploy.
-- `npm run build` passes locally with the same Node version used in production (Next.js 16 requires Node `>=20.9.0`).
+- `npm run build` passes locally with the same Node version used in production (Next.js 16 requires Node `>=20.9.0`; `package.json` declares this via `engines.node`).
 - `npm run typecheck`, `npm run lint`, and `npm test` pass locally.
+- `npm run deploy:check` has been run with production values loaded. It exits non-zero on missing/placeholder/test values and prints variable names only, never secret values.
+- The generated Prisma client in `src/generated/prisma` is committed, so Vercel does not need an install-time `prisma generate` step.
 - A production PostgreSQL database and a Clerk production instance are available.
 - You have credentials to set environment variables on the target platform and to run migrations against the target database.
 
@@ -35,6 +37,16 @@ Production safety rules:
 - Never run `npm run db:seed` against production. If the seed must be exercised, use a separate demo database and a Clerk test user.
 - Keep `DEMO_SEED=false` in production even though the app itself does not call the seed.
 - Rotate any key that was ever committed or printed in logs.
+
+## Preflight check
+
+Run the preflight with the same production values that will be set on the target platform:
+
+```bash
+npm run deploy:check
+```
+
+It verifies required variable names, Clerk `pk_live_`/`sk_live_` prefixes, placeholder removal, absolute `https://` app origin, PostgreSQL `DATABASE_URL`, no anon/service-role credentials, and `DEMO_SEED=false`. Its output deliberately contains no environment values, so it is safe to paste into a deployment ticket. A local run against development values is expected to fail until production values are loaded; that failure is evidence the check is working, not a build regression.
 
 ## Database configuration (Supabase pooler vs direct)
 
@@ -70,10 +82,10 @@ npm run db:migrate
 ## Deploy: Vercel
 
 1. Import the repository and select the target branch.
-2. Set the build command to `npm run build`; framework output is auto-detected for Next.js.
-3. Add all environment variables from the table above, using production values.
-4. Run migrations separately (see above) before routing traffic to the new deployment. Vercel does not run `db:migrate` as part of the build.
-5. Confirm the deployment uses Node `>=20.9.0` in its build/runtime settings if your project overrides the default.
+2. `vercel.json` in the repository already pins `framework: nextjs`, `installCommand: npm ci`, and `buildCommand: npm run build`. Do not override these unless you have a reviewed reason.
+3. Add all environment variables from the table above, using production values, in the Vercel project's environment variable settings. `.env.local` is git-ignored and listed in `.vercelignore`; it is never uploaded.
+4. Confirm the build uses Node `>=20.9.0`. `package.json` declares `engines.node`, so no separate manual override should be needed.
+5. Run migrations separately (see above) before routing traffic to the new deployment. Vercel does not run `db:migrate` as part of the build.
 6. Verify with the post-deploy checks below.
 
 ## Deploy: self-managed Node
@@ -95,13 +107,14 @@ npm run db:migrate
 ## Post-deploy verification (manual, by an authorized maintainer)
 
 1. Confirm the deployed commit/sha matches the intended release.
-2. `curl -sS https://<your-origin>/api/health` and confirm `success: true` and `status: "healthy"`.
-3. Sign in with a Clerk production test account; confirm redirect to the configured post-sign-in route.
-4. Open a representative page for each core area: accounts, transactions, budgets, goals, debts, recurring, notifications.
-5. Create and delete one throwaway transaction; confirm it persists and is scoped to the signed-in user.
-6. Confirm a second account cannot see the first account's rows (ownership checks return not-found behavior).
-7. Check application logs for auth errors or database errors; ensure no secrets or connection strings are logged.
-8. Confirm `DEMO_SEED=false` is set and that `npm run db:seed` was not run against production.
+2. Record the `npm run deploy:check` result from the environment used for the release. The report contains names only, never values.
+3. `curl -sS https://<your-origin>/api/health` and confirm `success: true` and `status: "healthy"`.
+4. Sign in with a Clerk production test account; confirm redirect to the configured post-sign-in route.
+5. Open a representative page for each core area: accounts, transactions, budgets, goals, debts, recurring, notifications.
+6. Create and delete one throwaway transaction; confirm it persists and is scoped to the signed-in user.
+7. Confirm a second account cannot see the first account's rows (ownership checks return not-found behavior).
+8. Check application logs for auth errors or database errors; ensure no secrets or connection strings are logged.
+9. Confirm `DEMO_SEED=false` is set and that `npm run db:seed` was not run against production.
 
 Record the observed environment (platform, commit sha, Node version) and results. Passing local checks does not establish target acceptance.
 
