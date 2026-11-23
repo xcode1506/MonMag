@@ -776,16 +776,6 @@ body {
     background: var(--cobalt-surface);
   }
 
-  .auth-sheet {
-    background: var(--card);
-    border-radius: var(--radius-card);
-    box-shadow: var(--inset-panel);
-  }
-
-  .auth-sheet .masthead-kicker {
-    margin-bottom: 1.25rem;
-  }
-
   .mobile-tabbar {
     position: fixed;
     left: 0;
@@ -944,11 +934,11 @@ body {
 @keyframes ledger-dialog-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -48%) scale(0.99);
+    transform: scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
   }
 }
 

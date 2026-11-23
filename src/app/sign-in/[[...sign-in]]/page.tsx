@@ -10,7 +10,7 @@ export default function SignInPage() {
   const locale = useClientLocale();
 
   return (
-    <AuthFrame width="signIn">
+    <AuthFrame>
       <Suspense
         fallback={
           <div className="flex min-h-[24rem] items-center justify-center text-sm text-muted-foreground">

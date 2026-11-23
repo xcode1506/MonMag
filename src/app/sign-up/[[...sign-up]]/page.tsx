@@ -10,7 +10,7 @@ export default function SignUpPage() {
   const locale = useClientLocale();
 
   return (
-    <AuthFrame width="signUp">
+    <AuthFrame>
       <Suspense
         fallback={
           <div className="flex min-h-[24rem] items-center justify-center text-sm text-muted-foreground">
