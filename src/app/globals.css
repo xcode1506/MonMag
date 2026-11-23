@@ -180,7 +180,7 @@ body {
 
   .page-enter,
   .dialog-overlay,
-  .dialog-content,
+  .dialog-panel,
   .progress-indicator {
     animation: none !important;
   }
@@ -831,8 +831,8 @@ body {
     animation: ledger-overlay-in 140ms ease-out both;
   }
 
-  .dialog-content {
-    animation: ledger-dialog-in 160ms ease-out both;
+  .dialog-panel {
+    animation: dialog-panel-in 160ms ease-out both;
   }
 
   .progress-indicator {
@@ -931,7 +931,7 @@ body {
   }
 }
 
-@keyframes ledger-dialog-in {
+@keyframes dialog-panel-in {
   from {
     opacity: 0;
     transform: scale(0.98);

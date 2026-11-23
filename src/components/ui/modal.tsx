@@ -35,7 +35,7 @@ export function Modal({
           <Dialog.Overlay className="dialog-overlay pointer-events-auto fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" />
           <Dialog.Content
             className={cn(
-              "dialog-content inset-control pointer-events-auto relative z-50 max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-[var(--radius-card)] border bg-card p-6 text-card-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              "dialog-panel inset-control pointer-events-auto relative z-50 max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-[var(--radius-card)] border bg-card p-6 text-card-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               className,
             )}
           >

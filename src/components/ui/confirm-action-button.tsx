@@ -64,7 +64,7 @@ export function ConfirmActionButton({
       <AlertDialog.Portal>
         <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center p-4">
           <AlertDialog.Overlay className="dialog-overlay pointer-events-auto fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" />
-          <AlertDialog.Content className="dialog-content inset-control pointer-events-auto relative z-50 max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-[var(--radius-card)] border bg-card p-6 text-card-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          <AlertDialog.Content className="dialog-panel inset-control pointer-events-auto relative z-50 max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-[var(--radius-card)] border bg-card p-6 text-card-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
             <AlertDialog.Title className="text-lg font-semibold">{title}</AlertDialog.Title>
             <AlertDialog.Description className="mt-2 text-sm text-muted-foreground">
               {description}

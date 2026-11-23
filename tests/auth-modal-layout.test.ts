@@ -52,9 +52,24 @@ describe("auth and modal layout", () => {
 
   it("uses a scale-only dialog entrance animation that cannot shift the center", () => {
     const css = source("src/app/globals.css");
-    const keyframe = css.match(/@keyframes ledger-dialog-in[\s\S]*?\n}\n/)?.[0] ?? "";
+    const keyframe = css.match(/@keyframes dialog-panel-in[\s\S]*?\n}\n/)?.[0] ?? "";
     expect(keyframe).toContain("scale(0.98)");
     expect(keyframe).toContain("scale(1)");
     expect(keyframe).not.toMatch(/translate\(/);
+  });
+
+  it("keeps dialog animation on a dedicated class so stale translate keyframes cannot hit it", () => {
+    const modal = source("src/components/ui/modal.tsx");
+    const confirm = source("src/components/ui/confirm-action-button.tsx");
+    const css = source("src/app/globals.css");
+
+    for (const component of [modal, confirm]) {
+      expect(component).toContain("dialog-panel");
+      expect(component).not.toContain("dialog-content");
+    }
+    expect(css).toMatch(/\.dialog-panel \{[\s\S]*?animation: dialog-panel-in/);
+    expect(css).toMatch(/\.dialog-panel,[\s\S]*?animation: none !important/);
+    expect(css).not.toMatch(/\.dialog-content/);
+    expect(css).not.toMatch(/ledger-dialog-in/);
   });
 });

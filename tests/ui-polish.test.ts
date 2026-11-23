@@ -83,7 +83,7 @@ describe("responsive navigation and motion contract", () => {
     const css = source("src/app/globals.css");
     expect(css).toMatch(/\.app-nav-link\[data-active="true"\]/);
     expect(css).toMatch(/\.mobile-tabbar/);
-    expect(css).toMatch(/@keyframes ledger-dialog-in/);
+    expect(css).toMatch(/@keyframes dialog-panel-in/);
     expect(css).toMatch(/@keyframes ledger-progress/);
     expect(css).toMatch(/prefers-reduced-motion: reduce/);
     expect(css).toMatch(/\.cashflow-chart \.recharts-yAxis/);
@@ -96,9 +96,9 @@ describe("responsive navigation and motion contract", () => {
     const confirm = source("src/components/ui/confirm-action-button.tsx");
     expect(button).toMatch(/active:scale-\[0\.985\]/);
     expect(modal).toMatch(/dialog-overlay/);
-    expect(modal).toMatch(/dialog-content/);
+    expect(modal).toMatch(/dialog-panel/);
     expect(confirm).toMatch(/dialog-overlay/);
-    expect(confirm).toMatch(/dialog-content/);
+    expect(confirm).toMatch(/dialog-panel/);
   });
 
   it("animates progress from zero without client-side state", () => {

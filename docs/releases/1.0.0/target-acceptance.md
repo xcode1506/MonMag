@@ -49,8 +49,9 @@ Current final results after the Midnight redesign, the `theme-provider.tsx` dark
 - Auth/dialog reproducer RED: `npx vitest run tests/auth-modal-layout.test.ts --reporter=dot` before the fix produced `3 failed` tests.
 - Midnight contract set: PASS - 3 files, 19/19 tests. Initial RED before implementation was `Test Files 3 failed (3)`, `Tests 14 failed (14)`.
 - Auth/dialog GREEN: `npx vitest run tests/auth-modal-layout.test.ts tests/midnight-public.test.ts tests/ui-polish.test.ts --reporter=dot` produced `3 files`, `31 tests passed`.
+- Dialog-hardening GREEN after renaming the animation hook: `npx vitest run tests/auth-modal-layout.test.ts tests/ui-polish.test.ts --reporter=dot` produced `2 files`, `26 tests passed`.
 - Six-file regression set: PASS - 6 files, 52/52 tests (`anti-slop`, `ui-polish`, `modern-charts`, `theme`, `money-display`, `date-range`). Legacy chart class contracts, Clerk title/source branding contracts, currency display, localization, reduced motion, and theme behavior remain intact.
-- `npm run test:coverage`: PASS - 27 test files, 292 tests.
+- `npm run test:coverage`: PASS - 27 test files, 293 tests.
   - Statements: 99.2% (376/379)
   - Branches: 91.93% (285/310)
   - Functions: 100% (126/126)
@@ -432,9 +433,9 @@ Source of truth: [Refero style 91b110da](https://styles.refero.design/style/91b1
 - RED command and result: `npx vitest run tests/midnight-direction.test.ts tests/midnight-public.test.ts tests/midnight-app-surface.test.ts --reporter=dot` before implementation produced `Test Files 3 failed (3)`, `Tests 14 failed (14)`.
 - GREEN command and result: the same command after implementation produced `Test Files 3 passed (3)`, `Tests 19 passed (19)`.
 - Regression command and result: `$env:VITE_CONFIG_NATIVE_IGNORE_WARNING='true'; npx vitest run tests/anti-slop.test.ts tests/ui-polish.test.ts tests/modern-charts.test.ts tests/theme.test.ts tests/money-display.test.ts tests/date-range.test.ts --reporter=dot` produced `Test Files 6 passed (6)`, `Tests 52 passed (52)`.
-- Full final suite: `npm run test:coverage` produced `Test Files 27 passed (27)`, `Tests 292 passed (292)`, Statements 99.2%, Branches 91.93%, Functions 100%, Lines 99.71%.
-- `npm run typecheck`, `npm run lint`, `npm audit --audit-level=high` (0 vulnerabilities), and `npm run build` (19 routes) all passed after the final auth/dialog polish edit.
-- The decorative auth box and dialog-centering fix were locked with `tests/auth-modal-layout.test.ts`: RED was `3 failed`, GREEN after the fix was `3 files / 31 tests passed` in the focused run with `tests/midnight-public.test.ts` and `tests/ui-polish.test.ts`.
+- Full final suite: `npm run test:coverage` produced `Test Files 27 passed (27)`, `Tests 293 passed (293)`, Statements 99.2%, Branches 91.93%, Functions 100%, Lines 99.71%.
+- `npm run typecheck`, `npm run lint`, `npm audit --audit-level=high` (0 vulnerabilities), and `npm run build` (19 routes) all passed after the final auth/dialog hardening edit.
+- The decorative auth box and dialog-centering fix were locked with `tests/auth-modal-layout.test.ts`: RED was `3 failed`, GREEN after the fix was `3 files / 31 tests passed` in the focused run with `tests/midnight-public.test.ts` and `tests/ui-polish.test.ts`. The hardening rename to `.dialog-panel` / `dialog-panel-in` then passed `2 files / 26 tests` and a stale-CSS injection probe.
 
 ### Local browser render evidence
 
@@ -456,7 +457,7 @@ The production build was served with `npm run start -- -p 3100` and probed with 
 | Vault shadow | inset-only: top `rgba(255,255,255,0.05)` and bottom `rgba(0,8,20,0.55)` |
 | Primary landing CTA | `rgb(28, 108, 255)` (Signal Blue) |
 | Clerk auth surface | no `.auth-sheet` or `.vault-panel`; Clerk is the only auth card |
-| Dialog center probe | `grid/center`, `transform: none`, offset `dx=0,dy=0` at 1000x700 and within 1px at odd viewports |
+| Dialog center probe | `grid/center`, `animationName=dialog-panel-in`, offset `dx=0,dy=0` at 1000x700 and within 1px at odd viewports |
 | Obsolete Slate/Terracotta palette in HTML or computed colors | none |
 | Horizontal overflow | none on any render |
 | Application page errors | none on any render |
@@ -467,4 +468,6 @@ The 10-render headless probe was rerun after the auth/dialog polish with the sam
 
 A separate visible-browser probe with Clerk JS loaded confirmed `clerkRootCount=1`, zero `.auth-sheet`/`.vault-panel` nodes, the exact Clerk heading `Sign In to MonMag`, and dialog center `dx=0,dy=0` at 1000x700. The exact title is also enforced by source contract in `tests/midnight-public.test.ts` through `src/app/layout.tsx`. The `Secured by` footer remains visible in Clerk's render; full removal requires Clerk Dashboard Branding as documented in `clerk-branding.md`. No CSS hiding was introduced.
 
-Authenticated dashboard and reports were not re-rendered in this final Midnight pass because no fresh Clerk dev-browser token was available. Their Midnight source contracts are covered by `midnight-app-surface.test.ts`, the 52-test regression set, the full 292-test suite, typecheck, lint, build, and the earlier authenticated probe. Production target acceptance remains **NOT PERFORMED (no production access/authorization)**.
+After the animation-hook rename, a stale-CSS injection probe deliberately added legacy `@keyframes ledger-dialog-in` with `translate(-50%, -50%)` plus a `.dialog-content` animation rule before opening the real `Modal`. The panel still measured `dx=0,dy=0`, used `animationName=dialog-panel-in`, and ignored the stale selector. This closes the dev-server failure mode where cached CSS could shift the popup off-center.
+
+Authenticated dashboard and reports were not re-rendered in this final Midnight pass because no fresh Clerk dev-browser token was available. Their Midnight source contracts are covered by `midnight-app-surface.test.ts`, the 52-test regression set, the full 293-test suite, typecheck, lint, build, and the earlier authenticated probe. Production target acceptance remains **NOT PERFORMED (no production access/authorization)**.
