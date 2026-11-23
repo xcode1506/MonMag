@@ -56,13 +56,24 @@ describe("midnight landing and sign-in surfaces", () => {
     expect(landing).not.toContain("bg-candy");
   });
 
-  it("turns sign-in into a rounded midnight vault without hiding Clerk branding", () => {
+  it("lets Clerk render directly on midnight without a decorative auth box", () => {
     const frame = source("src/components/auth/auth-frame.tsx");
-    expect(frame).toContain("auth-sheet");
-    expect(frame).toContain("vault-panel");
+    expect(frame).not.toContain("auth-sheet");
+    expect(frame).not.toContain("vault-panel");
     expect(frame).not.toContain("ledger-panel");
+    expect(frame).not.toContain("01 / ACCESS");
     expect(frame).not.toContain("Console");
-    expect(frame).not.toMatch(/shadow-\[|display:\s*none|visibility:\s*hidden/i);
+    expect(frame).toContain("auth-masthead");
+    expect(frame).toContain("<ThemeToggle");
+    expect(frame).toContain("{children}");
+    expect(frame).not.toMatch(/display:\s*none|visibility:\s*hidden/i);
+
+    const signIn = source("src/app/sign-in/[[...sign-in]]/page.tsx");
+    const signUp = source("src/app/sign-up/[[...sign-up]]/page.tsx");
+    expect(signIn).toContain("<SignIn />");
+    expect(signUp).toContain("<SignUp />");
+    expect(signIn).not.toContain("width=");
+    expect(signUp).not.toContain("width=");
 
     const layout = source("src/app/layout.tsx");
     expect(layout).toContain('title: "Sign In to MonMag"');
@@ -71,7 +82,7 @@ describe("midnight landing and sign-in surfaces", () => {
     expect(layout).not.toMatch(/Secured by Clerk/i);
 
     const css = source("src/app/globals.css");
-    expect(css).toMatch(/\.auth-sheet/);
+    expect(css).not.toMatch(/\.auth-sheet/);
   });
 
   it("preserves the public theme toggle and sample-data disclosure", () => {
