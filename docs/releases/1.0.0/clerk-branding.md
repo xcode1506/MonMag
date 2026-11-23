@@ -39,6 +39,19 @@ localization={{
 
 The sign-in page therefore renders exactly **Sign In to MonMag** from `signIn.start.title`.
 
+## Direct auth surface
+
+The previous decorative `.auth-sheet` / `.vault-panel` wrapper was removed from `src/components/auth/auth-frame.tsx`. The sign-in and sign-up pages now pass `<SignIn />` and `<SignUp />` directly into `AuthFrame`; the frame keeps only the masthead, theme toggle, and centered content slot.
+
+Evidence:
+
+- `tests/auth-modal-layout.test.ts:renders Clerk directly on the midnight page without a decorative CSS box` - RED before the fix, GREEN after.
+- `tests/midnight-public.test.ts:lets Clerk render directly on midnight without a decorative auth box` - source contract for the frame, both pages, and the absence of `.auth-sheet` in `globals.css`.
+- Refreshed headless probe at five viewport sizes: `authSheet=0`, `authDecor=0` on `/sign-in`, no page errors.
+- Visible-browser probe with Clerk JS loaded: `clerkRootCount=1`, `authSheetCount=0`, `vaultPanelCount=0`, and the exact heading `Sign In to MonMag`.
+
+The headless browser could not load Clerk JS in the isolated sandbox, so its result proves the removed decorative box and the app shell, not Clerk's mounted card. The visible-browser probe covers the mounted Clerk card.
+
 ## "Secured by Clerk" branding
 
 There is no safe code-only `<SignIn />` prop for removing the **Secured by Clerk** badge, and this repository does not hide it with CSS.

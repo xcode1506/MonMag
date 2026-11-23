@@ -21,6 +21,7 @@ All credentials, session tokens, dev-browser tokens, connection strings, and Cle
 | Copilot Money / Refero midnight visual direction | PASS |
 | Modern chart models and surfaces | PASS |
 | Public and sign-in/sign-up midnight redesign | PASS |
+| Clerk-direct login surface and centered dialog panels | PASS |
 | Production deployment | NOT PERFORMED (no production access/authorization) |
 
 The Terracotta journal and Slate + Electric Blue sections below are retained as historical evidence only. The current visual direction is **Copilot Money / Refero Midnight** (`Midnight Canvas · Signal Blue · Candy accents`) with modern area, net-line, and ranked-bar charts. Where the historical sections say Terracotta, cream, olive, Fraunces, Slate, Electric Blue, Console, or square ledger panels, read them as superseded by the Midnight section at the end of this document and in `visible-redesign.tdd.md`.
@@ -34,19 +35,22 @@ npm run typecheck
 npm run lint
 # PowerShell environment assignment for the current Vitest config warning policy
 $env:VITE_CONFIG_NATIVE_IGNORE_WARNING='true'; npx vitest run tests/midnight-direction.test.ts tests/midnight-public.test.ts tests/midnight-app-surface.test.ts
+$env:VITE_CONFIG_NATIVE_IGNORE_WARNING='true'; npx vitest run tests/auth-modal-layout.test.ts tests/midnight-public.test.ts tests/ui-polish.test.ts
 $env:VITE_CONFIG_NATIVE_IGNORE_WARNING='true'; npx vitest run tests/anti-slop.test.ts tests/ui-polish.test.ts tests/modern-charts.test.ts tests/theme.test.ts tests/money-display.test.ts tests/date-range.test.ts
 npm run test:coverage
 npm run build
 npm audit --audit-level=high
 ```
 
-Current final results after the Midnight redesign and the `theme-provider.tsx` dark-first fix:
+Current final results after the Midnight redesign, the `theme-provider.tsx` dark-first fix, and the final auth/dialog polish:
 
 - `npm run typecheck`: PASS.
 - `npm run lint`: PASS.
+- Auth/dialog reproducer RED: `npx vitest run tests/auth-modal-layout.test.ts --reporter=dot` before the fix produced `3 failed` tests.
 - Midnight contract set: PASS - 3 files, 19/19 tests. Initial RED before implementation was `Test Files 3 failed (3)`, `Tests 14 failed (14)`.
+- Auth/dialog GREEN: `npx vitest run tests/auth-modal-layout.test.ts tests/midnight-public.test.ts tests/ui-polish.test.ts --reporter=dot` produced `3 files`, `31 tests passed`.
 - Six-file regression set: PASS - 6 files, 52/52 tests (`anti-slop`, `ui-polish`, `modern-charts`, `theme`, `money-display`, `date-range`). Legacy chart class contracts, Clerk title/source branding contracts, currency display, localization, reduced motion, and theme behavior remain intact.
-- `npm run test:coverage`: PASS - 26 test files, 289 tests.
+- `npm run test:coverage`: PASS - 27 test files, 292 tests.
   - Statements: 99.2% (376/379)
   - Branches: 91.93% (285/310)
   - Functions: 100% (126/126)
@@ -428,8 +432,9 @@ Source of truth: [Refero style 91b110da](https://styles.refero.design/style/91b1
 - RED command and result: `npx vitest run tests/midnight-direction.test.ts tests/midnight-public.test.ts tests/midnight-app-surface.test.ts --reporter=dot` before implementation produced `Test Files 3 failed (3)`, `Tests 14 failed (14)`.
 - GREEN command and result: the same command after implementation produced `Test Files 3 passed (3)`, `Tests 19 passed (19)`.
 - Regression command and result: `$env:VITE_CONFIG_NATIVE_IGNORE_WARNING='true'; npx vitest run tests/anti-slop.test.ts tests/ui-polish.test.ts tests/modern-charts.test.ts tests/theme.test.ts tests/money-display.test.ts tests/date-range.test.ts --reporter=dot` produced `Test Files 6 passed (6)`, `Tests 52 passed (52)`.
-- Full final suite: `npm run test:coverage` produced `Test Files 26 passed (26)`, `Tests 289 passed (289)`, Statements 99.2%, Branches 91.93%, Functions 100%, Lines 99.71%.
-- `npm run typecheck`, `npm run lint`, `npm audit --audit-level=high` (0 vulnerabilities), and `npm run build` (19 routes) all passed after the final `theme-provider.tsx` edit.
+- Full final suite: `npm run test:coverage` produced `Test Files 27 passed (27)`, `Tests 292 passed (292)`, Statements 99.2%, Branches 91.93%, Functions 100%, Lines 99.71%.
+- `npm run typecheck`, `npm run lint`, `npm audit --audit-level=high` (0 vulnerabilities), and `npm run build` (19 routes) all passed after the final auth/dialog polish edit.
+- The decorative auth box and dialog-centering fix were locked with `tests/auth-modal-layout.test.ts`: RED was `3 failed`, GREEN after the fix was `3 files / 31 tests passed` in the focused run with `tests/midnight-public.test.ts` and `tests/ui-polish.test.ts`.
 
 ### Local browser render evidence
 
@@ -450,13 +455,16 @@ The production build was served with `npm run start -- -p 3100` and probed with 
 | Vault preview background | `rgb(1, 13, 30)` |
 | Vault shadow | inset-only: top `rgba(255,255,255,0.05)` and bottom `rgba(0,8,20,0.55)` |
 | Primary landing CTA | `rgb(28, 108, 255)` (Signal Blue) |
-| Auth sheet background | `rgb(1, 13, 30)` |
+| Clerk auth surface | no `.auth-sheet` or `.vault-panel`; Clerk is the only auth card |
+| Dialog center probe | `grid/center`, `transform: none`, offset `dx=0,dy=0` at 1000x700 and within 1px at odd viewports |
 | Obsolete Slate/Terracotta palette in HTML or computed colors | none |
 | Horizontal overflow | none on any render |
 | Application page errors | none on any render |
 
 Screenshots were written only to temporary operator files and were not added to the repository.
 
-The Clerk sign-in component was unavailable in the final headless sandbox render (external Clerk JS did not load), so that 10-render probe measured the app-rendered auth shell rather than Clerk's form. The exact title is enforced by source contract in `tests/midnight-public.test.ts` through `src/app/layout.tsx` and was observed in an earlier post-theme browser check with a warmed Clerk session: `Sign In to MonMag`. The `Secured by` footer remains visible in Clerk's render; full removal requires Clerk Dashboard Branding as documented in `clerk-branding.md`. No CSS hiding was introduced.
+The 10-render headless probe was rerun after the auth/dialog polish with the same five viewports. Its refreshed assertions were: no `.auth-sheet` on `/sign-in`, no decorative auth wrapper (`authDecor=0`), centered dialog geometry on all ten renders, no obsolete palette, no horizontal overflow, and no page errors. Clerk JS did not load in that isolated headless sandbox (`clerkRoot=0`), so the headless result proves the absence of the decorative box and the dialog geometry, not Clerk's mounted form.
 
-Authenticated dashboard and reports were not re-rendered in this final Midnight pass because no fresh Clerk dev-browser token was available. Their Midnight source contracts are covered by `midnight-app-surface.test.ts`, the 52-test regression set, the full 289-test suite, typecheck, lint, build, and the earlier authenticated probe. Production target acceptance remains **NOT PERFORMED (no production access/authorization)**.
+A separate visible-browser probe with Clerk JS loaded confirmed `clerkRootCount=1`, zero `.auth-sheet`/`.vault-panel` nodes, the exact Clerk heading `Sign In to MonMag`, and dialog center `dx=0,dy=0` at 1000x700. The exact title is also enforced by source contract in `tests/midnight-public.test.ts` through `src/app/layout.tsx`. The `Secured by` footer remains visible in Clerk's render; full removal requires Clerk Dashboard Branding as documented in `clerk-branding.md`. No CSS hiding was introduced.
+
+Authenticated dashboard and reports were not re-rendered in this final Midnight pass because no fresh Clerk dev-browser token was available. Their Midnight source contracts are covered by `midnight-app-surface.test.ts`, the 52-test regression set, the full 292-test suite, typecheck, lint, build, and the earlier authenticated probe. Production target acceptance remains **NOT PERFORMED (no production access/authorization)**.
