@@ -29,7 +29,18 @@ const CLERK_PATH_NAMES = [
 ] as const;
 
 const PLACEHOLDER_PATTERN =
-  /replace[_-]?me|your[_-]?|changeme|xxxx|placeholder/i;
+  /replace[_-]?me|your[_-]?|changeme|xxxx|placeholder|user:password@|\b(?:HOST|USERNAME|PASSWORD|DATABASE)\b|example\.invalid/i;
+
+const SECRET_LIKE_PATTERN =
+  /(sk_live_|pk_live_|sk_test_|pk_test_|whsec_)[A-Za-z0-9_-]{4,}|postgresql?:\/\/[^\s]+/gi;
+
+function redactSecrets(text: string): string {
+  return text.replace(
+    SECRET_LIKE_PATTERN,
+    (match, prefix: string | undefined) =>
+      prefix ? `${prefix}[REDACTED]` : "[REDACTED_DB_URL]",
+  );
+}
 
 function readValue(env: DeployEnvInput, name: string): string {
   const value = env[name];
@@ -90,7 +101,9 @@ export function validateDeployEnv(env: DeployEnvInput): DeployEnvResult {
     try {
       const parsed = new URL(appUrl);
       const hasCredentials = Boolean(parsed.username || parsed.password);
-      if (parsed.protocol !== "https:" || hasCredentials) {
+      const isOrigin =
+        parsed.pathname === "/" && !parsed.search && !parsed.hash;
+      if (parsed.protocol !== "https:" || hasCredentials || !isOrigin) {
         issues.push("NEXT_PUBLIC_APP_URL must be an absolute https origin");
       }
     } catch {
@@ -112,6 +125,11 @@ export function validateDeployEnv(env: DeployEnvInput): DeployEnvResult {
         issues.push(
           "DATABASE_URL must not use anon or service_role credentials",
         );
+      }
+
+      const sslmode = parsed.searchParams.get("sslmode")?.toLowerCase();
+      if (sslmode && sslmode !== "require" && sslmode !== "verify-full") {
+        issues.push("DATABASE_URL must require TLS in production");
       }
     } catch {
       issues.push("DATABASE_URL must be a PostgreSQL connection string");
@@ -136,7 +154,7 @@ export function formatDeployEnvReport(result: DeployEnvResult): string {
 
   return [
     "Deployment environment check: FAIL",
-    ...result.issues.map((issue) => `- ${issue}`),
+    ...result.issues.map((issue) => `- ${redactSecrets(issue)}`),
     "No secret values were printed.",
   ].join("\n");
 }

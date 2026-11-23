@@ -29,7 +29,7 @@ As a maintainer, I want the repository to be Vercel-deployable with an explicit 
 - `package.json`: `engines.node: >=20.9.0` and `deploy:check` script.
 - `.vercelignore`: excludes `.git`, `.github`, `.vercel`, `coverage`, `docs`, `tests`, and `.env*` from upload.
 - `scripts/check-deploy-env.ts`: validates production env shape without returning raw values.
-- `tests/deploy-env.test.ts`: 9 behavioral tests for the preflight.
+- `tests/deploy-env.test.ts`: 17 behavioral tests for the preflight.
 - `docs/DEPLOYMENT.md` and `README.md`: updated operator instructions.
 
 The generated Prisma client is already committed under `src/generated/prisma`, so the Vercel build does not depend on an install-time `prisma generate`.
@@ -53,10 +53,17 @@ Test Files 1 passed (1)
 Tests 9 passed (9)
 ```
 
+A second RED/GREEN cycle was driven by the deployment readiness reviews. Eight new reproducers were added for gaps found in the first pass; the targeted run failed on exactly the four intended assertions before the script was hardened:
+
+```text
+RED:  Test Files 1 failed (1) | Tests 4 failed | 13 passed (17)
+GREEN: Test Files 1 passed (1) | Tests 17 passed (17)
+```
+
 Checkpoint commits on `master`:
 
-- `2f07b52 test: add deployment env preflight reproducer` — RED evidence preserved.
-- `9738549 feat: add safe production environment preflight` — GREEN evidence preserved.
+- `2f07b52 test: add deployment env preflight reproducer` - RED evidence preserved.
+- `9738549 feat: add safe production environment preflight` - GREEN evidence preserved.
 
 ## Test specification
 
@@ -71,6 +78,16 @@ Checkpoint commits on `master`:
 | 7 | Supabase anon/service-role credentials are rejected as DATABASE_URL | `tests/deploy-env.test.ts:rejects Supabase anon and service role credentials as DATABASE_URL` | unit | PASS |
 | 8 | Demo seeding kill switch is enforced | `tests/deploy-env.test.ts:requires the demo seed kill switch in production` | unit | PASS |
 | 9 | Formatted report contains no secret values | `tests/deploy-env.test.ts:formats a report that never contains secret values` | unit | PASS |
+| 10 | The `.env.example` DATABASE_URL template is rejected | `tests/deploy-env.test.ts:rejects the DATABASE_URL template shipped in .env.example` | unit | PASS |
+| 11 | Database TLS cannot be explicitly disabled | `tests/deploy-env.test.ts:requires TLS for the production database connection` | unit | PASS |
+| 12 | App URL must be an origin, not a path or query string | `tests/deploy-env.test.ts:requires an origin-only https application URL` | unit | PASS |
+| 13 | Credentials embedded in the app URL are rejected | `tests/deploy-env.test.ts:rejects credentials embedded in the application URL` | unit | PASS |
+| 14 | Clerk redirect values must be local paths | `tests/deploy-env.test.ts:rejects absolute Clerk redirect values` | unit | PASS |
+| 15 | Placeholder webhook secret is rejected | `tests/deploy-env.test.ts:rejects a placeholder Clerk webhook secret` | unit | PASS |
+| 16 | Failing report never echoes a supplied secret | `tests/deploy-env.test.ts:formats a failing report without echoing supplied secrets` | unit | PASS |
+| 17 | Caller-supplied issue strings are redacted | `tests/deploy-env.test.ts:redacts secret-like content from caller-supplied issues` | unit | PASS |
+
+Review-driven hardening covered four areas: placeholder detection now recognizes the repository's own `.env.example` template tokens; `DATABASE_URL` rejects `sslmode=disable`, `allow`, and `prefer`; `NEXT_PUBLIC_APP_URL` is origin-only; and the FAIL branch of the report redacts secret-like content before printing. The em dashes that briefly broke the anti-slop test were replaced with plain hyphens.
 
 ## Local gate results
 
@@ -88,19 +105,33 @@ Observed results:
 
 - `npm run typecheck`: PASS.
 - `npm run lint`: PASS.
-- `npm run test:coverage`: PASS — 28 test files, 302 tests.
+- `npm run test:coverage`: PASS - 28 test files, 310 tests.
   - Statements: 99.2% (376/379)
   - Branches: 91.93% (285/310)
   - Functions: 100% (126/126)
   - Lines: 99.71% (344/345)
-- `npm audit --audit-level=high`: PASS — 0 vulnerabilities.
-- `npm run build`: PASS — 19 routes emitted; Cache Components and Partial Prefetching enabled.
+- `npm audit --audit-level=high`: PASS - 0 vulnerabilities.
+- `npm run build`: PASS - 19 routes emitted; Cache Components and Partial Prefetching enabled.
 
 A local `npm run deploy:check` against development values is expected to FAIL with a names-only report, because Clerk test keys, localhost app origin, and absent demo-seed kill switch are not production values. That failure is intentional evidence that the check rejects non-production inputs; no values were printed.
+
+## Client bundle secret scan
+
+The built client assets under `.next/static` were scanned with payload-shaped patterns, not bare prefixes:
+
+```text
+sk_live_[A-Za-z0-9]{16,}                 => 0 matches
+pk_live_[A-Za-z0-9]{16,}                 => 0 matches
+postgresql://[^\s"']+:[^\s"']+@          => 0 matches
+```
+
+Four earlier matches were Vendor Clerk string literals such as `"pk_live_"`, `"pk_test_"`, and `"live_"` used for runtime format checks; they contain no key material.
 
 ## Coverage and known gaps
 
 - The preflight script itself is validated behaviorally through `tests/deploy-env.test.ts`; it is outside the configured V8 coverage `include` list, which targets pure finance/UI libraries.
+- The preflight is a manual release gate, not a build hook. Preview builds can legitimately use development keys, so `vercel.json` does not run it. Enforcement depends on the authorized maintainer following `docs/DEPLOYMENT.md`.
+- Clerk key validation checks the `pk_live_` / `sk_live_` shape only. It cannot verify that a key is active, belongs to the intended instance, or matches its counterpart.
 - `GET /api/health` remains a liveness check. It does not prove database or Clerk connectivity. Production acceptance still requires the manual smoke steps in `docs/DEPLOYMENT.md`.
 - No production environment values, production keys, production database URL, or domain were provided.
 - No git push, Vercel import, migration, or deployment was performed.

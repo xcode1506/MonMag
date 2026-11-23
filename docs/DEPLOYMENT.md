@@ -29,7 +29,7 @@ Set these on the deployment platform (do not commit them):
 | `DIRECT_URL` | No | Direct PostgreSQL connection string. Documented for migrations; `prisma.config.ts` currently reads only `DATABASE_URL`. |
 | `NEXT_PUBLIC_APP_URL` | Yes | Full production origin, e.g. `https://app.example.com`. |
 | `DEMO_CLERK_USER_ID` | No | Demo seed only. Do not set in production. |
-| `DEMO_SEED` | No | Set to `false` in production as a kill switch. When omitted/empty, seeding is enabled. |
+| `DEMO_SEED` | Yes in production | Must be exactly `false`. When omitted/empty, seeding is enabled, and `npm run deploy:check` will fail. |
 
 Production safety rules:
 
@@ -46,7 +46,9 @@ Run the preflight with the same production values that will be set on the target
 npm run deploy:check
 ```
 
-It verifies required variable names, Clerk `pk_live_`/`sk_live_` prefixes, placeholder removal, absolute `https://` app origin, PostgreSQL `DATABASE_URL`, no anon/service-role credentials, and `DEMO_SEED=false`. Its output deliberately contains no environment values, so it is safe to paste into a deployment ticket. A local run against development values is expected to fail until production values are loaded; that failure is evidence the check is working, not a build regression.
+It verifies required variable names, Clerk `pk_live_`/`sk_live_` prefixes (shape only, not authenticity), placeholder removal including values copied from `.env.example`, an origin-only `https://` app URL, PostgreSQL `DATABASE_URL` with TLS required when `sslmode` is present, no anon/service-role credentials, and `DEMO_SEED=false`. Its output deliberately contains no environment values, so it is safe to paste into a deployment ticket. A local run against development values is expected to fail until production values are loaded; that failure is evidence the check is working, not a build regression.
+
+This is a manual release gate, not a build hook. `vercel.json` intentionally does not run it during `npm run build`, because preview builds can legitimately use development keys. The authorized maintainer must run it with production values and record the result before routing traffic to a production deployment. A passing result does not prove the keys are active or that the database is reachable.
 
 ## Database configuration (Supabase pooler vs direct)
 

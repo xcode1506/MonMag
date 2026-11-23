@@ -123,6 +123,75 @@ describe("validateDeployEnv", () => {
     );
   });
 
+  it("rejects the DATABASE_URL template shipped in .env.example", () => {
+    const result = validateDeployEnv({
+      ...validEnv,
+      DATABASE_URL:
+        "postgresql://USER:PASSWORD@HOST:6543/DATABASE?pgbouncer=true&connection_limit=1",
+    });
+
+    expect(result.issues.join("\n")).toContain(
+      "DATABASE_URL still contains a placeholder",
+    );
+  });
+
+  it("requires TLS for the production database connection", () => {
+    for (const sslmode of ["disable", "allow", "prefer"]) {
+      const result = validateDeployEnv({
+        ...validEnv,
+        DATABASE_URL: `postgresql://postgres.ref:pw@db.example.supabase.com:6543/postgres?sslmode=${sslmode}`,
+      });
+
+      expect(result.issues.join("\n")).toContain(
+        "DATABASE_URL must require TLS in production",
+      );
+    }
+  });
+
+  it("requires an origin-only https application URL", () => {
+    const result = validateDeployEnv({
+      ...validEnv,
+      NEXT_PUBLIC_APP_URL: "https://app.example.com/some/path?x=1",
+    });
+
+    expect(result.issues.join("\n")).toContain(
+      "NEXT_PUBLIC_APP_URL must be an absolute https origin",
+    );
+  });
+
+  it("rejects credentials embedded in the application URL", () => {
+    const result = validateDeployEnv({
+      ...validEnv,
+      NEXT_PUBLIC_APP_URL: "https://user:secret@app.example.com",
+    });
+
+    expect(result.issues.join("\n")).toContain(
+      "NEXT_PUBLIC_APP_URL must be an absolute https origin",
+    );
+  });
+
+  it("rejects absolute Clerk redirect values", () => {
+    const result = validateDeployEnv({
+      ...validEnv,
+      NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: "https://evil.example.com",
+    });
+
+    expect(result.issues.join("\n")).toContain(
+      "NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL must be an absolute path beginning with \"/\"",
+    );
+  });
+
+  it("rejects a placeholder Clerk webhook secret", () => {
+    const result = validateDeployEnv({
+      ...validEnv,
+      CLERK_WEBHOOK_SIGNING_SECRET: "your_webhook_signing_secret_here",
+    });
+
+    expect(result.issues.join("\n")).toContain(
+      "CLERK_WEBHOOK_SIGNING_SECRET still contains a placeholder",
+    );
+  });
+
   it("formats a report that never contains secret values", () => {
     const report = formatDeployEnvReport(
       validateDeployEnv({
@@ -134,5 +203,30 @@ describe("validateDeployEnv", () => {
     expect(report).toContain("Deployment environment check: PASS");
     expect(report).not.toContain("sk_live_DO_NOT_PRINT_THIS_VALUE");
     expect(report).not.toContain("postgres.ref:example");
+  });
+
+  it("formats a failing report without echoing supplied secrets", () => {
+    const report = formatDeployEnvReport(
+      validateDeployEnv({
+        ...validEnv,
+        CLERK_SECRET_KEY: "sk_live_SENTINEL_DO_NOT_PRINT",
+        DATABASE_URL: "",
+      }),
+    );
+
+    expect(report).toContain("Deployment environment check: FAIL");
+    expect(report).toContain("DATABASE_URL is required");
+    expect(report).not.toContain("sk_live_SENTINEL_DO_NOT_PRINT");
+  });
+
+  it("redacts secret-like content from caller-supplied issues", () => {
+    const report = formatDeployEnvReport({
+      ok: false,
+      issues: ["CLERK_SECRET_KEY sk_live_SENTINEL_VALUE leaked"],
+      checked: [],
+    });
+
+    expect(report).toContain("CLERK_SECRET_KEY");
+    expect(report).not.toContain("sk_live_SENTINEL_VALUE");
   });
 });
