@@ -44,29 +44,50 @@ User reported that the dashboard navigation still displayed numbered tabs `01`-`
 
 ## Production verification
 
+### Baseline before full prefetch
+
 - Deployment: `dpl_FuesBmGaJZ1beZyaVfhp38rv6JB4`
 - Commit: `f8437c4`
 - URL: `monmag-7nfd1pyxv-lhs21.vercel.app`
-- Alias: `monmag.vercel.app`
-- State: `READY`, `stale: false`, `aliasError: null`
+- State: `READY`, `stale: false`
 - Authenticated smoke: `https://monmag.vercel.app/dashboard?verify=nav-clean`
   - Title: `MonMag - Personal money management`
   - Heading: `Senang melihatmu lagi, Hugo`
   - Console errors: 0
   - Primary nav links: 10, numeric prefixes: 0
+- Compact page skeleton appeared in about 9 ms after a tab click, but page content took about 1.9-2.8 s because the user-specific Suspense slot still resolved from Supabase and Clerk on every navigation.
 
-### Tab-switch measurement (production)
+### Full-prefetch and private-cache release
 
-Measured with an authenticated browser session on `monmag.vercel.app`:
+- Deployment: `dpl_4FiStZbyWRnn2U9H3btcnp6CTJ5L`
+- Commit: `30913d151c07d2ad87fbd2483372d94889119eaa`
+- URL: `monmag-g6fef53pu-lhs21.vercel.app`
+- Alias: `monmag.vercel.app`
+- State: `READY`, `stale: false`, `aliasError: null`
+- Authenticated smoke: `https://monmag.vercel.app/dashboard?verify=prefetch-v1`
+  - Title: `MonMag - Personal money management`
+  - Heading: `Senang melihatmu lagi, Hugo`
+  - Console errors: 0
+  - Shared shell remains mounted, primary nav links: 10, numeric prefixes: 0
+- Network evidence: 9 full-route RSC prefetches completed with HTTP 200 in 551-717 ms after the dashboard loaded. Later aborted RSC prefetch entries are cancelled Next.js prefetches and produced no console errors.
 
-- Compact page skeleton appears in ~9 ms after clicking a nav tab.
-- Shared shell (sidebar, header, mobile tab bar) remains mounted; no full-shell skeleton or remount flash.
-- Page content becomes visible in ~1.9-2.8 s depending on the tab.
-- The RSC response is served from Vercel cache (`x-vercel-cache: HIT`), but the user-specific Suspense slot still resolves from Supabase and Clerk on each navigation. This remaining server-data latency is now isolated to the page content area instead of the whole dashboard shell.
+### Warm tab-switch measurement
 
-### Full-prefetch / private-cache target
+The user clarified `0,05 ms` as `≤50 ms / 0,05 detik`. Measurement used an authenticated browser session, `performance.now()` at link click, and resolution when the URL changed, the `main h1` changed, and no `aria-busy` skeleton remained.
 
-The user clarified `0,05 ms` as `≤50 ms / 0,05 detik`. The full-prefetch and private-cache change is implemented locally but not yet measured on production at the time of this commit. After deployment, the acceptance check is: load the app, wait for all nav prefetches to finish, then click between warmed tabs and confirm click-to-content is `≤50 ms` with zero console errors. Cold navigation remains allowed to take longer because it must fetch user-specific data.
+- Dashboard to Transaksi: 18.5 ms, h1 `Transaksi`.
+- Follow-up warmed sequence:
+  - Transaksi to Akun: 10.2 ms
+  - Akun to Anggaran: 14.8 ms
+  - Anggaran to Tabungan: 14.9 ms
+  - Tabungan to Dasbor: 16.4 ms
+  - Dasbor to Laporan & analitik: 14.8 ms
+  - Laporan & analitik to Notifikasi: 12.2 ms
+  - Notifikasi to Pengaturan: 20.7 ms
+  - Pengaturan to Transaksi: 27.2 ms
+- Maximum: 27.2 ms. All 9 measured switches are `≤50 ms`, so the clarified target is met for warmed tabs. Console errors: 0.
+- Cold navigation still needs to fetch user-specific data and is not part of the warm-switch guarantee.
+- Cache invalidation remains wired: 36 `refresh()` calls in `src/app/(app)/actions.ts` use `revalidatePath()`, and 12 `router.refresh()` call sites refresh views after mutations.
 
 ## Remaining operator-only / pending items
 
