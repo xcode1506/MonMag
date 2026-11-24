@@ -17,8 +17,9 @@ Scope: repository configuration, safe environment preflight, and local quality g
 | Production env values present | PASS - set in Vercel Production by name only; values never printed |
 | Clerk production instance / domain configured | PASS - live `pk_live_...` instance for `monmag.vercel.app`; Clerk JS loaded |
 | Supabase production migration | PASS - live app database schema up to date; no seed against production |
-| Production deployment and public smoke test | PASS - final commit `ef879c0`, deployment `6x8oZSWLj9JeKMcwoGdGzPaYp9Vt`, health 200, sign-in clean |
-| Production authenticated smoke test | PASS - real Clerk Production session; create/export/delete verified; see section 10 of `target-acceptance.md` |
+| Production deployment and public smoke test | PASS - code deployment `ef879c0` / `6x8oZSWLj9JeKMcwoGdGzPaYp9Vt`; verified post-rotation deployment `f956b45` / `dpl_8iYF2yS6bodxzFsFfK2PNo7411Hb` |
+| Production authenticated smoke test | PASS - real Clerk Production session; create/export/delete verified; post-rotation smoke also passed; see section 10 of `target-acceptance.md` and `clerk-secret-rotation.md` |
+| Clerk Production secret rotation | PASS - `CLERK_SECRET_KEY` rotated to `vercel-production-20261124-r4`; old keys not deleted because Clerk requires an operator-entered verification code |
 
 ## User journey
 
@@ -106,11 +107,11 @@ Observed results:
 
 - `npm run typecheck`: PASS.
 - `npm run lint`: PASS.
-- `npm run test:coverage`: PASS - 28 test files, 310 tests.
-  - Statements: 99.2% (376/379)
-  - Branches: 91.93% (285/310)
-  - Functions: 100% (126/126)
-  - Lines: 99.71% (344/345)
+- `npm run test:coverage`: PASS - 31 test files, 322 tests.
+  - Statements: 99.2%
+  - Branches: 91.93%
+  - Functions: 100%
+  - Lines: 99.71%
 - `npm audit --audit-level=high`: PASS - 0 vulnerabilities.
 - `npm run build`: PASS - 19 routes emitted; Cache Components and Partial Prefetching enabled.
 
@@ -140,16 +141,20 @@ Four earlier matches were Vendor Clerk string literals such as `"pk_live_"`, `"p
 
 ## Target acceptance
 
-The original readiness statement was **NOT PERFORMED** because no production access had been authorized. That has since changed: the repository was imported into Vercel, production env vars were set in the UI, the live database schema was confirmed current, and a fresh Production deployment from `main` / `36bc324` reached `Ready`.
+The original readiness statement was **NOT PERFORMED** because no production access had been authorized. That has since changed: the repository was imported into Vercel, production env vars were set in the UI, the live database schema was confirmed current, and Production deployments reached `Ready`.
 
-Production target acceptance is now **VERIFIED** for the application:
+Production target acceptance is **VERIFIED** for the application:
 
-- VERIFIED: Vercel Production deployment from final commit `ef879c0` / deployment `6x8oZSWLj9JeKMcwoGdGzPaYp9Vt`, health endpoint, public sign-in render, Clerk JS/UI asset loading, anonymous protected-route redirects, runtime log scan.
+- VERIFIED: code deployment `ef879c0` / `6x8oZSWLj9JeKMcwoGdGzPaYp9Vt` reached `Ready`; the verified post-rotation deployment was `f956b45` / `dpl_8iYF2yS6bodxzFsFfK2PNo7411Hb`, also `Ready`, aliased to `monmag.vercel.app`. Later docs-only commits may create new alias deployments with identical application code.
 - VERIFIED: a names-only production-shaped `npm run deploy:check` passed with non-live values; real values were set only in Vercel and never printed.
 - VERIFIED: a real Clerk Production user signed in manually; authenticated `/transactions`, `/reports`, and `/settings` rendered with 0 console errors; a throwaway transaction was created, displayed as `24/11/2026` / `−Rp 12.345`, exported with correct CSV headers and IDR amount, then deleted.
+- VERIFIED after secret rotation: authenticated `/transactions?verify=rotation` and `/settings?verify=rotation2` rendered with 0 console errors, and the CSV export endpoint returned HTTP 200 with the expected headers.
 - VERIFIED: ownership isolation is enforced in application code by `requireUser()`/`requireApiUser()` plus `userId` filters on every service query. A two-user live browser probe was not possible because only one production user exists.
-- VERIFIED: Vercel Runtime Logs after the final deployment show no new `XX000`, `4038201410`, or React `#441` errors; remaining timeout entries predate the deployment.
-- NOT PERFORMED / OPERATOR-ONLY: Clerk Dashboard cleanup (delete compromised `default` and `vercel-production-20261124` keys, retain `vercel-production-20261124-r2`, audit sessions/webhooks/domains, enforce admin 2FA) and Clerk Branding (Pro+) removal of the `Secured by` footer. Neither is an application deployment blocker.
-- NEXT PERMITTED CHECK: operator completes the manual Clerk Dashboard cleanup; no secret values or one-time codes need to be pasted into this repository or chat.
+- VERIFIED: Vercel Runtime Logs after the final deployment show Error 0 and Fatal 0 in the checked 30-minute window, with no new `XX000`, `4038201410`, or React `#441` errors; remaining timeout entries predate the deployment.
+- VERIFIED: Clerk reports `vercel-production-20261124-r4` as used by Production; the previous key's last-used timestamp stopped advancing and staged keys show no usage.
+- NOT PERFORMED / OPERATOR-ONLY: deletion of old Clerk keys was attempted but blocked by Clerk's verification challenge; the prompt was cancelled instead of bypassed. The operator must enter the code directly in the Clerk Dashboard and keep only `vercel-production-20261124-r4`.
+- NOT PERFORMED / OPERATOR-ONLY: the Singapore active session was reviewed but not revoked because ownership could not be established from dashboard evidence alone.
+- NOT PERFORMED / OPERATOR-ONLY: Clerk Branding (Pro+) removal of the `Secured by` footer, admin MFA enforcement (Pro), and a live two-user ownership probe.
+- NEXT PERMITTED CHECK: operator completes the manual Clerk Dashboard cleanup and decides whether to revoke the Singapore session; no secret values or one-time codes need to be pasted into this repository or chat.
 
-Full live evidence is in `docs/releases/1.0.0/target-acceptance.md` section 10 and `docs/releases/1.0.0/db-pool.tdd.md`; the Clerk proxy fix evidence is in `docs/releases/1.0.0/clerk-proxy.tdd.md`.
+Full live evidence is in `docs/releases/1.0.0/target-acceptance.md` section 10, `docs/releases/1.0.0/clerk-secret-rotation.md`, and `docs/releases/1.0.0/db-pool.tdd.md`; the Clerk proxy fix evidence is in `docs/releases/1.0.0/clerk-proxy.tdd.md`.
