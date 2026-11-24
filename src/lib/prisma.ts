@@ -1,5 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
+import { buildPoolConfig } from "./db-pool-config";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
@@ -9,7 +10,7 @@ function createPrismaClient(): PrismaClient {
     throw new Error("DATABASE_URL is not configured. See .env.example.");
   }
   return new PrismaClient({
-    adapter: new PrismaPg({ connectionString }),
+    adapter: new PrismaPg(buildPoolConfig(connectionString)),
   });
 }
 
