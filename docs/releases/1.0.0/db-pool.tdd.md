@@ -155,6 +155,44 @@ Additional guarantees:
 | 10 | Direct Supabase and non-Supabase URLs are not rewritten | `tests/db-pool.test.ts: does not rewrite direct Supabase or non-Supabase connection strings` | unit | PASS |
 | 11 | The pg pool uses the normalized connection string | `tests/db-pool.test.ts: normalizes the connection string used by the pg pool` | unit | PASS |
 
+## Follow-up: parallel checkout and IPv4 on the transaction pooler
+
+After commit `eee2eb7` was deployed, `/transactions` still failed intermittently. A direct `pg.Pool` probe showed the transaction-pooler host resolving to IPv6 first; the pooled connection could not be reused by parallel server-side reads, and checkout timed out before the query ran.
+
+Regression tests were added to `tests/db-pool.test.ts` for bounded parallel checkouts and IPv4 precedence:
+
+```text
+RED: 7ad4af7 test: add parallel query pool and IPv4 regression
+GREEN: ef879c0 fix: allow parallel DB queries over IPv4 transaction pooler
+```
+
+`src/lib/db-pool-config.ts` now uses `MAX_POOL_CONNECTIONS = 5`, `IDLE_TIMEOUT_MS = 10_000`, `CONNECT_TIMEOUT_MS = 10_000`, and `family: 4`. A direct `pg.Pool` check after GREEN returned `{"ok":true,"count":5,"elapsedMs":247,"runtimePort":"6543","family":4}` without exposing the connection string.
+
+Full final gates after GREEN:
+
+```text
+npm run typecheck            -> PASS
+npm run lint                 -> PASS
+npm test                     -> PASS (31 files, 322 tests)
+npm run test:coverage        -> PASS (Statements 99.2%, Branches 91.93%, Functions 100%, Lines 99.71%)
+npm run build                -> PASS (19 routes)
+npm audit --audit-level=high -> PASS (0 vulnerabilities)
+npm run deploy:check (dummy values) -> PASS
+```
+
+Additional guarantees:
+
+| # | What is guaranteed | Test file or command | Test type | Result |
+|---|--------------------|----------------------|-----------|--------|
+| 12 | Parallel reads can use up to five pooled connections | `tests/db-pool.test.ts` parallel checkout case | unit | PASS |
+| 13 | The pg pool prefers IPv4 for the Supabase transaction pooler | `tests/db-pool.test.ts` IPv4 case | unit | PASS |
+
 ## Target acceptance
 
-Not yet performed for commit `eee2eb7`. Next step: push and deploy, then re-check authenticated `/transactions`, `/reports`, `/settings`, and `/api/transactions/export`, and confirm Vercel Runtime Logs show no new `XX000`, `timeout exceeded when trying to connect`, or React `#441` errors.
+Verified on Vercel Production with commit `ef879c0`, deployment `6x8oZSWLj9JeKMcwoGdGzPaYp9Vt` (Ready 2026-11-24 ~16:06 GMT+7), production domain `https://monmag.vercel.app`.
+
+- `GET /api/health`: `200`, `{"success":true,"data":{"status":"healthy",...}}`.
+- Authenticated `/transactions?verify=final1`, `/settings?verify=final3`, and `/reports?verify=final4` rendered with no section error and 0 browser console errors.
+- A throwaway transaction was created through the UI, displayed as `24/11/2026` and `−Rp 12.345` (DD/MM/YYYY, IDR), appeared in `GET /api/transactions/export` as `"24/11/2026","Smoke DB Pool Final",...,"Rp 12.345","IDR"`, then was deleted and confirmed absent after reload.
+- Vercel Runtime Logs rechecked after deployment: the remaining `timeout exceeded when trying to connect` / digest `4038201410` entries were timestamped `15:38:26` and `15:50:16`, before this deployment became Ready. No new `XX000`, `timeout exceeded when trying to connect`, `4038201410`, or React `#441` entries were observed after the deployment.
+- Prefetch `net::ERR_ABORTED` entries with HTTP 200 remain benign Next.js RSC prefetch cancellations, not application errors.

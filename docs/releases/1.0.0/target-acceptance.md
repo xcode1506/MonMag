@@ -22,9 +22,10 @@ All credentials, session tokens, dev-browser tokens, connection strings, and Cle
 | Modern chart models and surfaces | PASS |
 | Public and sign-in/sign-up midnight redesign | PASS |
 | Clerk-direct login surface and centered dialog panels | PASS |
-| Production deployment | PASS - Vercel Production, commit `36bc324`, deployment `GPeM2C7iwzADpJrfNRMbYxrjus7b` |
+| Production deployment | PASS - Vercel Production; final commit `ef879c0`, deployment `6x8oZSWLj9JeKMcwoGdGzPaYp9Vt` (earlier proxy-fix deployment `GPeM2C7iwzADpJrfNRMbYxrjus7b`) |
 | Production Clerk JS/proxy path | PASS - `/__clerk/...` assets return 200 after redirects; sign-in console errors 0 |
-| Production authenticated pages and transaction flows | NOT PERFORMED - pending a real Clerk production user session |
+| Production authenticated pages and transaction flows | PASS - real Clerk Production session; see section 10 |
+| Vercel Runtime Logs after final deployment | PASS - no new `XX000`, `4038201410`, or React `#441` entries; see section 10 |
 
 The Terracotta journal and Slate + Electric Blue sections below are retained as historical evidence only. The current visual direction is **Copilot Money / Refero Midnight** (`Midnight Canvas · Signal Blue · Candy accents`) with modern area, net-line, and ranked-bar charts. Where the historical sections say Terracotta, cream, olive, Fraunces, Slate, Electric Blue, Console, or square ledger panels, read them as superseded by the Midnight section at the end of this document and in `visible-redesign.tdd.md`.
 
@@ -550,3 +551,39 @@ Event payloads were read only to classify activity. Email addresses, IP addresse
 - After the operator completes Clerk verification, delete the compromised secret keys `default` and `vercel-production-20261124`, retain only `vercel-production-20261124-r2`, and enforce 2FA for dashboard admins. The last-one-day application-log audit found no suspicious activity; extend the audit window if Clerk's plan allows it.
 - After a Clerk production user exists, repeat steps 4 through 8 in `docs/DEPLOYMENT.md` against `https://monmag.vercel.app` and update this section with observed results.
 - Temporary local Vercel upload files were deleted after Vercel verification. They were outside the repository and were never staged.
+
+## 10. Final authenticated production acceptance (current)
+
+After section 9 was recorded, a real Clerk Production user (`gronesci@gmail.com`) signed in successfully through the visible browser. The operator did not bypass Clerk Protect or any human check. A final database-pool fix was deployed and re-verified here.
+
+### 10.1 Final deployment
+
+| Check | Result |
+| --- | --- |
+| Final commit pushed | `ef879c0 fix: allow parallel DB queries over IPv4 transaction pooler` |
+| Push command | `git push origin HEAD:main` -> `236070f..ef879c0 HEAD -> main` (local branch is `master`) |
+| Vercel Production deployment | `6x8oZSWLj9JeKMcwoGdGzPaYp9Vt`, status `Ready`, ~47s build |
+| Production domains | `monmag.vercel.app`, `monmag-git-main-lhs21.vercel.app`, `monmag-ccefals9d-lhs21.vercel.app` |
+| Final gates | typecheck, lint, 322 tests, coverage 99.2%/91.93%/100%/99.71%, build 19 routes, `npm audit --audit-level=high` 0 vulnerabilities, names-only `deploy:check` PASS |
+| Dedicated TDD evidence | `docs/releases/1.0.0/db-pool.tdd.md` |
+
+### 10.2 Authenticated smoke
+
+| Check | Result |
+| --- | --- |
+| `GET /api/health` after final deployment | `200`, `{"success":true,"data":{"status":"healthy","timestamp":"2026-11-24T08:52:05.812Z"}}` |
+| Authenticated `/transactions?verify=final1` | Rendered; no section error; 0 console errors |
+| Authenticated `/reports?verify=final4` | Rendered Rp values and `Zona waktu: Asia/Jakarta`; no `MYR` display |
+| Authenticated `/settings?verify=final3` | IDR, Bahasa Indonesia, Asia/Jakarta, DD/MM/YYYY, Senin; preview `id-ID` |
+| Create throwaway transaction | Title `Smoke DB Pool Final`, `12345` IDR, account `Dana`, payment `Tunai` |
+| Display format in list | `24/11/2026` and `−Rp 12.345` |
+| `GET /api/transactions/export` after create | `200`; `text/csv; charset=utf-8`; `attachment; filename="monmag-transactions.csv"`; `Cache-Control: no-store`; header `"Tanggal","Judul",...`; row `"24/11/2026","Smoke DB Pool Final",...,"Rp 12.345","IDR"` |
+| Delete throwaway transaction | Confirmed via `alertdialog`; toast `Transaksi dihapus.`; absent after reload; export returned to header-only |
+| Ownership isolation | Enforced in code: `requireUser()`/`requireApiUser()` on actions and export, and `userId` filters in every service query (accounts, transactions, budgets, categories, debts, goals, notifications, recurring, dashboard, settings). No second live production user was available for a two-account browser probe. |
+| Console/network after smoke | 0 console errors; only benign Next.js RSC prefetch `net::ERR_ABORTED` entries with HTTP 200 |
+
+### 10.3 Logs and remaining gaps
+
+Vercel Runtime Logs were rechecked after the final deployment. Two `timeout exceeded when trying to connect` entries with digest `4038201410` were still visible at `15:38:26` and `15:50:16`, but both predate the final deployment becoming Ready at approximately `16:06` GMT+7. No new `XX000`, `EMAXCONNSESSION`, `4038201410`, or React `#441` entries were observed after the deployment.
+
+Manual Clerk Dashboard cleanup remains an operator task: delete the compromised keys `default` and `vercel-production-20261124`, retain only `vercel-production-20261124-r2`, audit sessions/webhooks/domains, and enforce 2FA for dashboard admins. Removal of Clerk's `Secured by` footer remains a Clerk Dashboard Branding (Pro+) requirement and was not faked with CSS.

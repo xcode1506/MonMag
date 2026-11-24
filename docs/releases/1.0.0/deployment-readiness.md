@@ -17,8 +17,8 @@ Scope: repository configuration, safe environment preflight, and local quality g
 | Production env values present | PASS - set in Vercel Production by name only; values never printed |
 | Clerk production instance / domain configured | PASS - live `pk_live_...` instance for `monmag.vercel.app`; Clerk JS loaded |
 | Supabase production migration | PASS - live app database schema up to date; no seed against production |
-| Production deployment and public smoke test | PASS - commit `36bc324`, deployment `GPeM2C7iwzADpJrfNRMbYxrjus7b`, health 200, sign-in clean |
-| Production authenticated smoke test | NOT PERFORMED - pending a real Clerk production user session |
+| Production deployment and public smoke test | PASS - final commit `ef879c0`, deployment `6x8oZSWLj9JeKMcwoGdGzPaYp9Vt`, health 200, sign-in clean |
+| Production authenticated smoke test | PASS - real Clerk Production session; create/export/delete verified; see section 10 of `target-acceptance.md` |
 
 ## User journey
 
@@ -142,12 +142,14 @@ Four earlier matches were Vendor Clerk string literals such as `"pk_live_"`, `"p
 
 The original readiness statement was **NOT PERFORMED** because no production access had been authorized. That has since changed: the repository was imported into Vercel, production env vars were set in the UI, the live database schema was confirmed current, and a fresh Production deployment from `main` / `36bc324` reached `Ready`.
 
-Production target acceptance is now **PARTIAL**:
+Production target acceptance is now **VERIFIED** for the application:
 
-- VERIFIED: Vercel Production deployment, health endpoint, public sign-in render, Clerk JS/UI asset loading, anonymous protected-route redirects, runtime log scan.
+- VERIFIED: Vercel Production deployment from final commit `ef879c0` / deployment `6x8oZSWLj9JeKMcwoGdGzPaYp9Vt`, health endpoint, public sign-in render, Clerk JS/UI asset loading, anonymous protected-route redirects, runtime log scan.
 - VERIFIED: a names-only production-shaped `npm run deploy:check` passed with non-live values; real values were set only in Vercel and never printed.
-- NOT PERFORMED: authenticated page rendering and write/ownership/export checks with a real Clerk production user.
-- BLOCKED: browser-driven sign-up was stopped by Clerk Protect before a user was created; no bypass was attempted.
-- NEXT PERMITTED CHECK: an operator creates or signs in with a real Clerk production user manually, confirms `/dashboard`, then executes steps 4 through 8 in `docs/DEPLOYMENT.md`.
+- VERIFIED: a real Clerk Production user signed in manually; authenticated `/transactions`, `/reports`, and `/settings` rendered with 0 console errors; a throwaway transaction was created, displayed as `24/11/2026` / `−Rp 12.345`, exported with correct CSV headers and IDR amount, then deleted.
+- VERIFIED: ownership isolation is enforced in application code by `requireUser()`/`requireApiUser()` plus `userId` filters on every service query. A two-user live browser probe was not possible because only one production user exists.
+- VERIFIED: Vercel Runtime Logs after the final deployment show no new `XX000`, `4038201410`, or React `#441` errors; remaining timeout entries predate the deployment.
+- NOT PERFORMED / OPERATOR-ONLY: Clerk Dashboard cleanup (delete compromised `default` and `vercel-production-20261124` keys, retain `vercel-production-20261124-r2`, audit sessions/webhooks/domains, enforce admin 2FA) and Clerk Branding (Pro+) removal of the `Secured by` footer. Neither is an application deployment blocker.
+- NEXT PERMITTED CHECK: operator completes the manual Clerk Dashboard cleanup; no secret values or one-time codes need to be pasted into this repository or chat.
 
-Full live evidence is in `docs/releases/1.0.0/target-acceptance.md`, and the Clerk proxy fix evidence is in `docs/releases/1.0.0/clerk-proxy.tdd.md`.
+Full live evidence is in `docs/releases/1.0.0/target-acceptance.md` section 10 and `docs/releases/1.0.0/db-pool.tdd.md`; the Clerk proxy fix evidence is in `docs/releases/1.0.0/clerk-proxy.tdd.md`.
