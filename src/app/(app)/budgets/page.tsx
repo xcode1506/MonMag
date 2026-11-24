@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { BudgetsView, type BudgetRow } from "@/components/pages/budgets-view";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { requireUser } from "@/lib/auth";
@@ -8,6 +9,9 @@ import { listBudgets } from "@/lib/services/budgets";
 import { amountInput, localeOf } from "@/lib/ui";
 
 async function BudgetsContent() {
+  "use cache: private";
+  cacheLife({ stale: 60 });
+
   const user = await requireUser();
   const [budgets, categories] = await Promise.all([
     listBudgets(user.id),

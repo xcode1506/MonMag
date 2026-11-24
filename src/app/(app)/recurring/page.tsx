@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { RecurringView, type RecurringRow } from "@/components/pages/recurring-view";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { requireUser } from "@/lib/auth";
@@ -10,6 +11,9 @@ import { localeOf } from "@/lib/ui";
 import { toRecurringRow } from "@/lib/view-models/recurring";
 
 async function RecurringContent() {
+  "use cache: private";
+  cacheLife({ stale: 60 });
+
   const user = await requireUser();
   const [rules, accounts, categories] = await Promise.all([
     listRecurring(user.id),

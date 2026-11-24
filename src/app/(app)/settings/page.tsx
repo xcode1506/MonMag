@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { SettingsView } from "@/components/pages/settings-view";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { requireUser } from "@/lib/auth";
@@ -6,6 +7,9 @@ import { listAccounts } from "@/lib/services/accounts";
 import { localeOf } from "@/lib/ui";
 
 async function SettingsContent() {
+  "use cache: private";
+  cacheLife({ stale: 60 });
+
   const user = await requireUser();
   const accounts = await listAccounts(user.id);
 

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { TransactionsView } from "@/components/pages/transactions-view";
 import { requireUser } from "@/lib/auth";
@@ -16,6 +17,9 @@ function first(value: string | string[] | undefined): string {
 }
 
 async function TransactionsContent({ searchParams }: { searchParams: SearchParams }) {
+  "use cache: private";
+  cacheLife({ stale: 60 });
+
   const params = await searchParams;
   const user = await requireUser();
   const locale = localeOf(user.preferredLanguage);

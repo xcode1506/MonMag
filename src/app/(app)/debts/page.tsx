@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { DebtsView, type DebtRow } from "@/components/pages/debts-view";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { requireUser } from "@/lib/auth";
@@ -7,6 +8,9 @@ import { listDebts } from "@/lib/services/debts";
 import { amountInput, localeOf } from "@/lib/ui";
 
 async function DebtsContent() {
+  "use cache: private";
+  cacheLife({ stale: 60 });
+
   const user = await requireUser();
   const debts = await listDebts(user.id);
   const currency = user.preferredCurrency;

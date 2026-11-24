@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import {
   NotificationsView,
   type NotificationRow,
@@ -9,6 +10,9 @@ import { listNotifications } from "@/lib/services/notifications";
 import { localeOf } from "@/lib/ui";
 
 async function NotificationsContent() {
+  "use cache: private";
+  cacheLife({ stale: 60 });
+
   const user = await requireUser();
   const { items, unread } = await listNotifications(user.id);
   const rows: NotificationRow[] = items.map((item) => ({

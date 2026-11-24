@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { GoalsView, type GoalRow } from "@/components/pages/goals-view";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { requireUser } from "@/lib/auth";
@@ -7,6 +8,9 @@ import { listGoals } from "@/lib/services/goals";
 import { amountInput, localeOf } from "@/lib/ui";
 
 async function GoalsContent() {
+  "use cache: private";
+  cacheLife({ stale: 60 });
+
   const user = await requireUser();
   const goals = await listGoals(user.id);
   const rows: GoalRow[] = goals.map((goal) => ({

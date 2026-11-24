@@ -49,6 +49,7 @@ export function MobileMoreMenu({ locale, unread }: { locale: Locale; unread: num
               <DropdownMenu.Item asChild key={item.href}>
                 <Link
                   href={item.href}
+                  prefetch={true}
                   className="flex items-center gap-2.5 rounded-[var(--radius-button)] px-3 py-2 text-sm outline-none transition-colors hover:bg-muted focus:bg-muted data-[highlighted]:bg-muted"
                 >
                   <Icon className="size-4 text-muted-foreground" aria-hidden="true" />

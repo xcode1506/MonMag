@@ -88,6 +88,7 @@ export function AppChrome({ children, name, email, locale, unread }: AppChromePr
               ) : null}
               <Link
                 href={item.href}
+                prefetch={true}
                 onClick={() => setMobileOpen(false)}
                 data-active={active ? "true" : undefined}
                 aria-current={active ? "page" : undefined}
@@ -169,6 +170,7 @@ export function AppChrome({ children, name, email, locale, unread }: AppChromePr
           <ThemeToggle locale={locale} />
           <Link
             href="/notifications"
+            prefetch={true}
             aria-label={`${t(locale, "nav.notifications")}${unread > 0 ? ` (${unread})` : ""}`}
             className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
@@ -202,6 +204,7 @@ export function AppChrome({ children, name, email, locale, unread }: AppChromePr
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
               data-active={active ? "true" : undefined}
               aria-current={active ? "page" : undefined}
               className="mobile-tabbar-link"

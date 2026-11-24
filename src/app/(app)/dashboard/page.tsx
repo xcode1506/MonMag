@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { ArrowUpRight, PiggyBank, Plus, Wallet } from "lucide-react";
 import {
   CashflowChart,
@@ -59,6 +60,9 @@ function FocusFigure({
 }
 
 async function DashboardContent() {
+  "use cache: private";
+  cacheLife({ stale: 60 });
+
   const user = await requireUser();
   const locale = localeOf(user.preferredLanguage);
   const currency = user.preferredCurrency;

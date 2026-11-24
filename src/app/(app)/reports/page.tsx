@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { ArrowDownRight, ArrowUpRight, BarChart3, Wallet } from "lucide-react";
 import {
   CategoryRankingChart,
@@ -21,6 +22,9 @@ import { getDashboardData } from "@/lib/services/dashboard";
 import { amountInput, localeOf, money } from "@/lib/ui";
 
 async function ReportsContent() {
+  "use cache: private";
+  cacheLife({ stale: 60 });
+
   const user = await requireUser();
   const locale = localeOf(user.preferredLanguage);
   const currency = user.preferredCurrency;
