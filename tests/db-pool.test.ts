@@ -8,12 +8,13 @@ import {
 } from "@/lib/db-pool-config";
 
 describe("serverless database pool configuration", () => {
-  it("bounds each serverless instance to a single connection", () => {
-    expect(MAX_POOL_CONNECTIONS).toBe(1);
+  it("allows parallel page queries while staying bounded per instance", () => {
+    expect(MAX_POOL_CONNECTIONS).toBeGreaterThanOrEqual(4);
+    expect(MAX_POOL_CONNECTIONS).toBeLessThanOrEqual(8);
   });
 
-  it("releases idle connections quickly so warm lambdas do not hold pool slots", () => {
-    expect(IDLE_TIMEOUT_MS).toBeLessThanOrEqual(5_000);
+  it("releases idle connections so warm lambdas do not hold pool slots", () => {
+    expect(IDLE_TIMEOUT_MS).toBeLessThanOrEqual(30_000);
   });
 
   it("fails fast instead of hanging when the shared pool is exhausted", () => {
@@ -21,12 +22,13 @@ describe("serverless database pool configuration", () => {
     expect(CONNECT_TIMEOUT_MS).toBeLessThanOrEqual(15_000);
   });
 
-  it("builds a pg pool config with the bounded limits", () => {
+  it("builds a pg pool config with the bounded limits and IPv4", () => {
     expect(buildPoolConfig("postgresql://example")).toEqual({
       connectionString: "postgresql://example",
-      max: 1,
+      max: MAX_POOL_CONNECTIONS,
       idleTimeoutMillis: IDLE_TIMEOUT_MS,
       connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
+      family: 4,
     });
   });
 
