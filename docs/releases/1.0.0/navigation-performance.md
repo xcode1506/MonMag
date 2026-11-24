@@ -119,6 +119,8 @@ The user clarified `0,05 ms` as `≤50 ms / 0,05 detik`. Measurement used an aut
   - Transaksi to Akun: 7.0 ms
 - Maximum: 12.7 ms. All 9 measured switches are `<=50 ms`. A second sequence (8.1, 8.4, 7.1, 6.8, 7.6 ms) fired zero new `_rsc` requests, confirming the destination content came from the client Router Cache rather than a navigation round trip. Console errors: 0.
 - The five-minute `stale` value follows the Next.js prefetching guide: cached `use cache: private` content is reused from the client Router Cache at `stale >= 5 minutes`, while lower values fetch again on every navigation. Cold navigation still fetches user-specific data and is not part of the warm-switch guarantee.
+- Doc-only commit `7562951` deployed as `dpl_FErgvXszTb9CyPnSZofPueLZbbUa`. Alias state was `READY`, `stale: false`, `aliasError: null`, with the same app code as `15dcd88`.
+- On that alias, a fresh direct visit still populated caches on the first client navigations (Transaksi 2845.6 ms, returning Dasbor 1216.2 ms). After those first visits, a repeated sequence was 7.9, 12.0, 11.0, 11.8, 17.3, 9.9 ms with zero new `_rsc` requests. This matches the documented cold-cache exception; the `<=50 ms` guarantee applies to warmed switches.
 
 ## Remaining operator-only / pending items
 
