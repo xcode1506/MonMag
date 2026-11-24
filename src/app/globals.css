@@ -306,16 +306,6 @@ body {
     line-height: 1;
   }
 
-  .nav-index {
-    width: 1.25rem;
-    flex-shrink: 0;
-    color: var(--sidebar-muted);
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    letter-spacing: 0.04em;
-    font-variant-numeric: tabular-nums;
-  }
-
   .app-nav-link {
     position: relative;
     border-radius: var(--radius-button);
@@ -336,10 +326,6 @@ body {
     width: 2px;
     border-radius: var(--radius-tag);
     background: var(--brand);
-  }
-
-  .app-nav-link[data-active="true"] .nav-index {
-    color: var(--brand);
   }
 
   .header-context {

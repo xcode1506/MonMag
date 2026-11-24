@@ -98,9 +98,6 @@ export function AppChrome({ children, name, email, locale, unread }: AppChromePr
                     : "text-sidebar-muted hover:bg-sidebar-active/60 hover:text-sidebar-foreground",
                 )}
               >
-                <span className="nav-index" aria-hidden="true">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
                 <Icon className="size-4 shrink-0" aria-hidden="true" />
                 <span className="flex-1">{t(locale, item.label)}</span>
                 {item.href === "/notifications" && unread > 0 ? (
@@ -191,7 +188,7 @@ export function AppChrome({ children, name, email, locale, unread }: AppChromePr
           </React.Suspense>
         </header>
         <main className="app-canvas mx-auto w-full max-w-[1400px] flex-1 space-y-8 px-4 pt-6 pb-24 sm:pb-8 sm:px-6 sm:pt-8">
-          <div key={pathname} className="page-enter">
+          <div className="page-enter">
             {children}
           </div>
         </main>

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import type { User } from "@/generated/prisma/client";
@@ -24,7 +25,7 @@ export async function getClerkUserId(): Promise<string | null> {
  * Returns the local user row, creating it on first authenticated request.
  * Clerk user profile data is used only as a source for the initial row.
  */
-export async function getCurrentUser(): Promise<User | null> {
+export const getCurrentUser = cache(async (): Promise<User | null> => {
   const clerkUserId = await getClerkUserId();
   if (!clerkUserId) return null;
 
@@ -67,7 +68,7 @@ export async function getCurrentUser(): Promise<User | null> {
     }
     throw error;
   }
-}
+});
 
 /** Use in Server Components and Server Actions. Redirects when signed out. */
 export async function requireUser(): Promise<User> {

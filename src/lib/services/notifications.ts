@@ -2,6 +2,10 @@ import type { NotificationType } from "@/generated/prisma/enums";
 import { assertOwnership } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export async function countUnreadNotifications(userId: string) {
+  return prisma.notification.count({ where: { userId, read: false } });
+}
+
 export async function listNotifications(userId: string, take = 50) {
   const [items, unread] = await Promise.all([
     prisma.notification.findMany({
