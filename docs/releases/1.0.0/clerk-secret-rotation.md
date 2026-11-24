@@ -59,7 +59,7 @@ Pending operator action in the Clerk Dashboard, with the verification code enter
 
 ## Session review
 
-The Production user's device list showed three active sessions: two in Indonesia and one in Singapore. The Singapore session was not revoked because ownership could not be established from the dashboard evidence alone. Operator decision is required before revocation.
+The Production user's device list shows three active sessions, all reported in Indonesia on the latest Clerk detail view: Linux Chrome 157 at `103.190.46.246` (Pekanbaru) at 18:15, Windows Chrome 158 at `104.28.226.248` (Medan) at 18:14, and Windows Chrome 152.0.7977.167 at `104.28.194.247` (Medan) at 18:19. The earlier "Singapore" label was from an older snapshot of the same IP. The last session matches the user agent of the browser used for the authenticated production checks and warm navigation measurement. Decision: keep it active. Revoking it would only sign out the operator's own verification browser, with no security benefit. No sessions were revoked.
 
 ## Related evidence
 

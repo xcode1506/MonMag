@@ -153,8 +153,8 @@ Production target acceptance is **VERIFIED** for the application:
 - VERIFIED: Vercel Runtime Logs after the final deployment show Error 0 and Fatal 0 in the checked 30-minute window, with no new `XX000`, `4038201410`, or React `#441` errors; remaining timeout entries predate the deployment.
 - VERIFIED: Clerk reports `vercel-production-20261124-r4` as used by Production; the previous key's last-used timestamp stopped advancing and staged keys show no usage.
 - NOT PERFORMED / OPERATOR-ONLY: deletion of old Clerk keys was attempted but blocked by Clerk's verification challenge; the prompt was cancelled instead of bypassed. The operator must enter the code directly in the Clerk Dashboard and keep only `vercel-production-20261124-r4`.
-- NOT PERFORMED / OPERATOR-ONLY: the Singapore active session was reviewed but not revoked because ownership could not be established from dashboard evidence alone.
+- DECIDED / NO ACTION: the `104.28.194.247` session was reviewed and intentionally kept active. Current Clerk detail reports it in Medan, Indonesia, and its Chrome 152.0.7977.167 user agent matches the operator browser used for production verification. Revoking it would sign out the operator's own session.
 - NOT PERFORMED / OPERATOR-ONLY: Clerk Branding (Pro+) removal of the `Secured by` footer, admin MFA enforcement (Pro), and a live two-user ownership probe.
-- NEXT PERMITTED CHECK: operator completes the manual Clerk Dashboard cleanup and decides whether to revoke the Singapore session; no secret values or one-time codes need to be pasted into this repository or chat.
+- NEXT PERMITTED CHECK: operator completes the manual Clerk Dashboard key cleanup; no secret values or one-time codes need to be pasted into this repository or chat.
 
 Full live evidence is in `docs/releases/1.0.0/target-acceptance.md` section 10, `docs/releases/1.0.0/clerk-secret-rotation.md`, and `docs/releases/1.0.0/db-pool.tdd.md`; the Clerk proxy fix evidence is in `docs/releases/1.0.0/clerk-proxy.tdd.md`.
