@@ -4,8 +4,9 @@
  * Supabase's session pooler caps clients (observed: pool_size 15). Each Vercel
  * function instance owns its own Prisma/pg pool, so an unbounded pool exhausts
  * the shared cap under concurrent page loads and surfaces as React error #441.
- * Keeping one connection per instance plus a short idle timeout lets warm
- * functions release their slot quickly instead of holding it indefinitely.
+ * A small bounded pool (five connections per instance) lets the four parallel
+ * reads on `/transactions` run without queueing behind one connection, while
+ * the idle timeout lets warm functions release unused slots.
  *
  * Supabase's shared session pooler is still reachable on port 5432, but it is
  * not designed for serverless traffic: once 15 clients are attached, new
@@ -20,8 +21,8 @@ const SUPABASE_POOLER_HOST_SUFFIX = ".pooler.supabase.com";
 const SESSION_POOLER_PORT = "5432";
 const TRANSACTION_POOLER_PORT = "6543";
 
-export const MAX_POOL_CONNECTIONS = 1;
-export const IDLE_TIMEOUT_MS = 2_000;
+export const MAX_POOL_CONNECTIONS = 5;
+export const IDLE_TIMEOUT_MS = 10_000;
 export const CONNECT_TIMEOUT_MS = 10_000;
 
 /**
@@ -59,5 +60,8 @@ export function buildPoolConfig(connectionString: string) {
     max: MAX_POOL_CONNECTIONS,
     idleTimeoutMillis: IDLE_TIMEOUT_MS,
     connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
+    // Supabase's pooler is reachable over IPv4; forcing it avoids Vercel
+    // functions stalling on an unavailable IPv6 route before attempting IPv4.
+    family: 4,
   };
 }
