@@ -2,7 +2,7 @@
 
 Date: 2026-11-24  
 Target: Vercel (Next.js native runtime)  
-Scope: repository configuration, safe environment preflight, and local quality gates. This is **not** a production deployment record.
+Scope: repository configuration, safe environment preflight, and local quality gates. The original readiness record is preserved below; live production results are summarized at the end and fully recorded in `target-acceptance.md`.
 
 ## Verdict
 
@@ -14,10 +14,11 @@ Scope: repository configuration, safe environment preflight, and local quality g
 | Secret-safe preflight output | PASS |
 | Local build/typecheck/lint/tests/coverage | PASS |
 | Dependency audit | PASS |
-| Production env values present | NOT PROVIDED |
-| Clerk production instance / domain configured | NOT PERFORMED |
-| Supabase production migration | NOT PERFORMED |
-| Production deployment and smoke test | NOT PERFORMED |
+| Production env values present | PASS - set in Vercel Production by name only; values never printed |
+| Clerk production instance / domain configured | PASS - live `pk_live_...` instance for `monmag.vercel.app`; Clerk JS loaded |
+| Supabase production migration | PASS - live app database schema up to date; no seed against production |
+| Production deployment and public smoke test | PASS - commit `36bc324`, deployment `GPeM2C7iwzADpJrfNRMbYxrjus7b`, health 200, sign-in clean |
+| Production authenticated smoke test | NOT PERFORMED - pending a real Clerk production user session |
 
 ## User journey
 
@@ -133,10 +134,20 @@ Four earlier matches were Vendor Clerk string literals such as `"pk_live_"`, `"p
 - The preflight is a manual release gate, not a build hook. Preview builds can legitimately use development keys, so `vercel.json` does not run it. Enforcement depends on the authorized maintainer following `docs/DEPLOYMENT.md`.
 - Clerk key validation checks the `pk_live_` / `sk_live_` shape only. It cannot verify that a key is active, belongs to the intended instance, or matches its counterpart.
 - `GET /api/health` remains a liveness check. It does not prove database or Clerk connectivity. Production acceptance still requires the manual smoke steps in `docs/DEPLOYMENT.md`.
-- No production environment values, production keys, production database URL, or domain were provided.
-- No git push, Vercel import, migration, or deployment was performed.
+- At the time of the original readiness pass, no production environment values, keys, database URL, or domain had been provided. Those values were later set in Vercel Production without being printed or committed.
+- At the time of the original readiness pass, no git push, Vercel import, migration, or deployment had been performed. The later production steps are recorded at the end of this file and in `target-acceptance.md`.
 - Clerk `Secured by` footer removal still requires Clerk Dashboard Branding (Pro+); it is not a deployment blocker and is not accomplished by CSS hiding.
 
 ## Target acceptance
 
-Target acceptance remains **NOT PERFORMED**. An authorized maintainer must import the repo into Vercel, set production env vars, run `npm run deploy:check`, apply migrations, deploy, and execute the post-deploy verification in `docs/DEPLOYMENT.md`. Passing these local checks does not establish a successful production deployment.
+The original readiness statement was **NOT PERFORMED** because no production access had been authorized. That has since changed: the repository was imported into Vercel, production env vars were set in the UI, the live database schema was confirmed current, and a fresh Production deployment from `main` / `36bc324` reached `Ready`.
+
+Production target acceptance is now **PARTIAL**:
+
+- VERIFIED: Vercel Production deployment, health endpoint, public sign-in render, Clerk JS/UI asset loading, anonymous protected-route redirects, runtime log scan.
+- VERIFIED: a names-only production-shaped `npm run deploy:check` passed with non-live values; real values were set only in Vercel and never printed.
+- NOT PERFORMED: authenticated page rendering and write/ownership/export checks with a real Clerk production user.
+- BLOCKED: browser-driven sign-up was stopped by Clerk Protect before a user was created; no bypass was attempted.
+- NEXT PERMITTED CHECK: an operator creates or signs in with a real Clerk production user manually, confirms `/dashboard`, then executes steps 4 through 8 in `docs/DEPLOYMENT.md`.
+
+Full live evidence is in `docs/releases/1.0.0/target-acceptance.md`, and the Clerk proxy fix evidence is in `docs/releases/1.0.0/clerk-proxy.tdd.md`.

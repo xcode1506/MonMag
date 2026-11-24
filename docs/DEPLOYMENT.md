@@ -1,6 +1,6 @@
 # Deployment Checklist
 
-This document describes a deployment **procedure** for MonMag on Vercel or a self-managed Node host. It does not claim that any deployment has been performed or verified. Target acceptance requires an authorized maintainer with real environment access.
+This document describes the deployment **procedure** for MonMag on Vercel or a self-managed Node host. It is not itself an acceptance record; live production evidence is recorded under `docs/releases/1.0.0/`. Target acceptance requires an authorized maintainer with real environment access.
 
 ## Scope and preconditions
 
@@ -79,7 +79,8 @@ npm run db:migrate
 2. Add the production origin (`NEXT_PUBLIC_APP_URL`) to Clerk's allowed origins and redirect URLs.
 3. Verify the sign-in/sign-up paths exist in the deployed app and match the corresponding environment variables.
 4. Ensure `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL` and `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL` point to reachable production routes.
-5. If webhooks are added later, register the endpoint in Clerk and set `CLERK_WEBHOOK_SIGNING_SECRET` from that endpoint's signing secret. No webhook route exists in this repository today.
+5. Keep `/__clerk/(.*)` in the Next.js 16 `src/proxy.ts` matcher. On Vercel, Clerk serves `clerk.browser.js`, UI assets, and Frontend API requests through this path. Without it, the sign-in page fails with `failed_to_load_clerk_js` and `/__clerk/...` requests return 404. `tests/clerk-proxy.test.ts` guards this contract.
+6. If webhooks are added later, register the endpoint in Clerk and set `CLERK_WEBHOOK_SIGNING_SECRET` from that endpoint's signing secret. No webhook route exists in this repository today.
 
 ## Deploy: Vercel
 
@@ -111,12 +112,13 @@ npm run db:migrate
 1. Confirm the deployed commit/sha matches the intended release.
 2. Record the `npm run deploy:check` result from the environment used for the release. The report contains names only, never values.
 3. `curl -sS https://<your-origin>/api/health` and confirm `success: true` and `status: "healthy"`.
-4. Sign in with a Clerk production test account; confirm redirect to the configured post-sign-in route.
-5. Open a representative page for each core area: accounts, transactions, budgets, goals, debts, recurring, notifications.
-6. Create and delete one throwaway transaction; confirm it persists and is scoped to the signed-in user.
-7. Confirm a second account cannot see the first account's rows (ownership checks return not-found behavior).
-8. Check application logs for auth errors or database errors; ensure no secrets or connection strings are logged.
-9. Confirm `DEMO_SEED=false` is set and that `npm run db:seed` was not run against production.
+4. Open `/sign-in` and confirm the browser console has no `failed_to_load_clerk_js` error. Check the network tab for `/__clerk/...` assets returning 200 after any redirects.
+5. Sign in with a Clerk production test account; confirm redirect to the configured post-sign-in route.
+6. Open a representative page for each core area: accounts, transactions, budgets, goals, debts, recurring, notifications.
+7. Create and delete one throwaway transaction; confirm it persists and is scoped to the signed-in user.
+8. Confirm a second account cannot see the first account's rows (ownership checks return not-found behavior).
+9. Check application logs for auth errors or database errors; ensure no secrets or connection strings are logged.
+10. Confirm `DEMO_SEED=false` is set and that `npm run db:seed` was not run against production.
 
 Record the observed environment (platform, commit sha, Node version) and results. Passing local checks does not establish target acceptance.
 
@@ -129,4 +131,4 @@ Record the observed environment (platform, commit sha, Node version) and results
 
 ## Target acceptance statement
 
-Target acceptance is **NOT PERFORMED** by this document. An authorized maintainer with real production environment access must execute the post-deploy verification above and record evidence (environment, version, commit sha, observed results). No migration, seed, or deployment check has been run as part of preparing these docs.
+Target acceptance is **NOT GRANTED** by this document. For the current MonMag release, public production checks passed and the evidence is recorded in `docs/releases/1.0.0/target-acceptance.md`; authenticated checks remain **NOT PERFORMED** pending a real Clerk production user session. An authorized maintainer with real production environment access must execute the post-deploy verification above and record evidence (environment, version, commit sha, observed results). No migration, seed, or deployment check is performed by preparing these docs.

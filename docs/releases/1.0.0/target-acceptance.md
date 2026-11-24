@@ -1,8 +1,7 @@
 # Target Acceptance Evidence - 1.0.0
 
 Date: 2026-11-24  
-Scope: local Next.js dev server at `http://localhost:3000`, live Supabase PostgreSQL, Clerk development instance.  
-This is **not** a production deployment record. Production deployment remains an authorized-maintainer step.
+Scope: sections 1-8 are local/historical evidence from the dev server at `http://localhost:3000`, live Supabase PostgreSQL, and a Clerk development instance. Section 9 records live Vercel Production acceptance after the authorized deployment.
 
 All credentials, session tokens, dev-browser tokens, connection strings, and Clerk user ids are redacted in this report. Secret values were kept only in git-ignored `.env.local` or temporary operator files and were never printed, staged, or committed.
 
@@ -23,7 +22,9 @@ All credentials, session tokens, dev-browser tokens, connection strings, and Cle
 | Modern chart models and surfaces | PASS |
 | Public and sign-in/sign-up midnight redesign | PASS |
 | Clerk-direct login surface and centered dialog panels | PASS |
-| Production deployment | NOT PERFORMED (no production access/authorization) |
+| Production deployment | PASS - Vercel Production, commit `36bc324`, deployment `GPeM2C7iwzADpJrfNRMbYxrjus7b` |
+| Production Clerk JS/proxy path | PASS - `/__clerk/...` assets return 200 after redirects; sign-in console errors 0 |
+| Production authenticated pages and transaction flows | NOT PERFORMED - pending a real Clerk production user session |
 
 The Terracotta journal and Slate + Electric Blue sections below are retained as historical evidence only. The current visual direction is **Copilot Money / Refero Midnight** (`Midnight Canvas · Signal Blue · Candy accents`) with modern area, net-line, and ranked-bar charts. Where the historical sections say Terracotta, cream, olive, Fraunces, Slate, Electric Blue, Console, or square ledger panels, read them as superseded by the Midnight section at the end of this document and in `visible-redesign.tdd.md`.
 
@@ -472,4 +473,80 @@ A separate visible-browser probe with Clerk JS loaded confirmed `clerkRootCount=
 
 After the animation-hook rename, a stale-CSS injection probe deliberately added legacy `@keyframes ledger-dialog-in` with `translate(-50%, -50%)` plus a `.dialog-content` animation rule before opening the real `Modal`. The panel still measured `dx=0,dy=0`, used `animationName=dialog-panel-in`, and ignored the stale selector. This closes the dev-server failure mode where cached CSS could shift the popup off-center.
 
-Authenticated dashboard and reports were not re-rendered in this final Midnight pass because no fresh Clerk dev-browser token was available. Their Midnight source contracts are covered by `midnight-app-surface.test.ts`, the 52-test regression set, the full 293-test suite, typecheck, lint, build, and the earlier authenticated probe. Production target acceptance remains **NOT PERFORMED (no production access/authorization)**.
+Authenticated dashboard and reports were not re-rendered in this final Midnight pass because no fresh Clerk dev-browser token was available. Their Midnight source contracts are covered by `midnight-app-surface.test.ts`, the 52-test regression set, the full 293-test suite, typecheck, lint, build, and the earlier authenticated probe. That statement applied to the local Midnight pass; live production evidence is recorded in section 9.
+
+## 9. Live Vercel Production acceptance (current)
+
+Target: `https://monmag.vercel.app`  
+Platform: Vercel, team `LHS`, project `monmag`, Production environment  
+Branch/commit: `main` / `36bc324`  
+Deployment: `GPeM2C7iwzADpJrfNRMbYxrjus7b`, status `Ready`  
+Runtime: Next.js 16.4.6 / React 19.3.0 on Vercel's Node runtime
+
+Authorization and environment setup were performed in the Vercel UI. All required Production environment variables were present by name only: `CLERK_SECRET_KEY` (Secret), `DATABASE_URL` (Secret), `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `DEMO_SEED`, `NEXT_PUBLIC_APP_URL`, and the four Clerk sign-in/sign-up URL variables. `Separate Production Secret Values` was enabled. Values were entered directly in the Vercel UI or through a controlled file upload and were never pasted into source, commits, logs, or this report.
+
+### 9.1 Release gates before deployment
+
+```text
+npm run typecheck -> PASS
+npm run lint      -> PASS
+npm test          -> PASS (29 files, 311 tests)
+npm run build     -> PASS (19 routes)
+git push origin HEAD:main -> de4ce1e..36bc324
+```
+
+The dedicated regression evidence for the Clerk proxy fix is in `docs/releases/1.0.0/clerk-proxy.tdd.md`.
+
+A names-only production-shaped `npm run deploy:check` was also exercised earlier with non-live values and passed (`Checked 8 required variables. No secret values were printed.`). The real production values exist only in the Vercel UI, so no local check was run against live secrets and no secret values were printed, staged, or committed.
+
+### 9.2 Live public smoke
+
+| Check | Result |
+| --- | --- |
+| Vercel Production deployment from `36bc324` | Ready |
+| `GET /api/health?verify=proxyfix` | `200`, `success: true`, `status: "healthy"` |
+| `GET /sign-in?verify=proxyfix2` | Clerk root mounted, exact visible heading `Sign In to MonMag` |
+| Clerk JS / UI assets over `/__clerk/...` | 307 redirects followed by 200 responses |
+| `/__clerk/v1/environment` and `/__clerk/v1/client` | 200 |
+| Browser console errors on final sign-in load | 0 |
+| Anonymous `/dashboard`, `/transactions`, `/accounts`, `/reports` | Redirected to `/sign-in` |
+
+The first live deployment exposed a `failed_to_load_clerk_js` error because `src/proxy.ts` did not include `/__clerk/(.*)` in its matcher. The regression test and fix listed above corrected it; the final deployment no longer shows the error.
+
+### 9.3 Logs and secret exposure
+
+Vercel Runtime Logs for the production project showed:
+
+```text
+Info 16
+Warning 0
+Error 0
+Fatal 0
+```
+
+A payload-shaped scan of the visible log text found 0 live secret keys, 0 live publishable keys, and 0 PostgreSQL connection strings. Client bundle scanning was previously clean for live secret keys, live publishable keys, and database URLs with credentials.
+
+### 9.4 Clerk production audit state
+
+| Check | Observed result |
+| --- | --- |
+| Publishable key instance | Production `pk_live_...` shape for `monmag.vercel.app` |
+| Users list | No completed users at the last check; aborted sign-up events appeared in the logs |
+| Primary domain | `monmag.vercel.app` listed as Primary (status `Checking` at observation) |
+| Organizations | Not enabled; no organization rows |
+| Setup checklist | Initially `0/3`; later `1/3` observed; setup remains incomplete |
+| Application logs, last 1 day | Sign-in/sign-up and Protect challenge/failure events from a single operator IP only; no completed user, session, organization role, webhook, or domain-change events |
+| Sign-up through the automated browser | Clerk Protect challenge at `/sign-up/protect-check` reported that verification did not complete; no challenge bypass was attempted |
+| `Secured by` footer | Still rendered by Clerk; full removal requires Clerk Dashboard Branding (Pro+) and is not CSS-hidden |
+| Compromised old secret key deletion | Verification dialog open; awaiting operator-entered one-time code |
+
+Event payloads were read only to classify activity. Email addresses, IP addresses, client IDs, trace IDs, and sign-up IDs are not reproduced in this report.
+
+### 9.5 Known gaps and next permitted step
+
+- Authenticated production page rendering, locale/date/currency rendering with real user data, throwaway transaction create/delete, ownership isolation, and authenticated CSV export are **NOT PERFORMED**. They require a real Clerk production user session.
+- Clerk Protect stopped the browser-driven sign-up attempt before a user was created. The operator must create or sign in with a real production user manually; the challenge must not be bypassed.
+- The production database migration was already applied to the live Supabase project used by the app; `Database schema is up to date!` was observed earlier. No seed was run against production, and `DEMO_SEED=false` is set.
+- After the operator completes Clerk verification, delete the compromised secret keys `default` and `vercel-production-20261124`, retain only `vercel-production-20261124-r2`, and enforce 2FA for dashboard admins. The last-one-day application-log audit found no suspicious activity; extend the audit window if Clerk's plan allows it.
+- After a Clerk production user exists, repeat steps 4 through 8 in `docs/DEPLOYMENT.md` against `https://monmag.vercel.app` and update this section with observed results.
+- Temporary local Vercel upload files were deleted after Vercel verification. They were outside the repository and were never staged.
