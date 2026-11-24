@@ -20,7 +20,8 @@ describe("dashboard navigation responsiveness", () => {
   it("keeps the shell mounted while a page loads", () => {
     const layout = source("src/app/(app)/layout.tsx");
     expect(layout).not.toContain("AppShellSkeleton");
-    expect(layout).not.toContain("Suspense");
+    expect(layout).toContain("Suspense");
+    expect(layout).toContain("fallback={<PageSkeleton />}");
     expect(layout).toContain("<AppShell>{children}</AppShell>");
 
     const loading = source("src/app/(app)/loading.tsx");
