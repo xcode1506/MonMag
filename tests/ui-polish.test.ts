@@ -66,7 +66,7 @@ describe("responsive navigation and motion contract", () => {
     expect(chrome).toMatch(/MobileMoreMenu/);
     expect(chrome).toMatch(/data-active=\{active \? "true" : undefined\}/);
     expect(chrome).toMatch(/aria-current=\{active \? "page" : undefined\}/);
-    expect(chrome).toMatch(/key=\{pathname\}/);
+    expect(chrome).not.toMatch(/key=\{pathname\}/);
     expect(chrome).toMatch(/pb-24 sm:pb-8/);
   });
 

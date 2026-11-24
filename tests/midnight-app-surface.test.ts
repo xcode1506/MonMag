@@ -22,10 +22,11 @@ describe("midnight dashboard and workspace surface", () => {
   it("keeps a signal-blue active state on the workspace rail", () => {
     const chrome = source("src/components/layout/app-chrome.tsx");
     expect(chrome).toContain("app-brandmark");
-    expect(chrome).toContain("nav-index");
+    expect(chrome).not.toContain("nav-index");
+    expect(chrome).toContain("app-nav-link");
     expect(chrome).toContain("app-canvas");
     expect(chrome).toMatch(/data-active=\{active \? "true" : undefined\}/);
-    expect(chrome).toMatch(/key=\{pathname\}/);
+    expect(chrome).not.toMatch(/key=\{pathname\}/);
 
     const css = source("src/app/globals.css");
     expect(css).toMatch(/\.app-nav-link\[data-active="true"\]/);
