@@ -73,7 +73,8 @@ describe("dashboard navigation responsiveness", () => {
       const content = source(`src/app/(app)/${page}/page.tsx`);
       expect(content, page).toContain('use cache: private');
       expect(content, page).toContain('from "next/cache"');
-      expect(content, page).toMatch(/cacheLife\(\{ stale: \d+ \}\)/);
+      const stale = Number(content.match(/cacheLife\(\{ stale: (\d+) \}\)/)?.[1] ?? 0);
+      expect(stale, page).toBeGreaterThanOrEqual(300);
     }
   });
 });
