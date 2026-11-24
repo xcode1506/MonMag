@@ -49,13 +49,11 @@ No secret value was printed, staged, committed, or pasted into chat during verif
 
 ## Cleanup status
 
-Deletion of unused Clerk keys was attempted for `vercel-production-20261124-r3`. Clerk required an account verification code before deletion. The verification prompt was cancelled rather than bypassed, and the key remains present. No old keys were deleted.
+Cleanup is complete. The unused Clerk keys `default`, `vercel-production-20261124-r2`, and `vercel-production-20261124-r3` were deleted, together with the superseded key `vercel-production-20261124`. Exactly one active secret key remains: `vercel-production-20261124-r4`.
 
-Pending operator action in the Clerk Dashboard, with the verification code entered directly in the browser by the operator:
+Deletion used the Clerk Dashboard confirmation dialogs only. No verification code, full key value, or password was requested, captured, or sent to chat, source files, or this repository.
 
-1. Delete unused keys: `default`, `vercel-production-20261124`, `vercel-production-20261124-r2`, and `vercel-production-20261124-r3`.
-2. Keep exactly one active key: `vercel-production-20261124-r4`.
-3. Do not send verification codes or full key values to chat, source files, or this repository.
+Evidence: after cleanup the API keys page lists only `vercel-production-20261124-r4`, used by the live production traffic. A fresh production smoke test at `/dashboard?verify=keys-cleanup` rendered the authenticated page with 0 console errors and 0 numeric navigation prefixes.
 
 ## Session review
 

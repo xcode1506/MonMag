@@ -124,7 +124,7 @@ The user clarified `0,05 ms` as `≤50 ms / 0,05 detik`. Measurement used an aut
 
 ## Remaining operator-only / pending items
 
-- Old Clerk secret deletion still requires a Clerk verification code entered by the operator.
+- Clerk secret cleanup is complete: only `vercel-production-20261124-r4` remains active. Post-cleanup production smoke test rendered the dashboard with 0 console errors and 0 numeric navigation prefixes.
 - Clerk session `104.28.194.247` was reviewed and intentionally kept active. Current Clerk detail reports it in Medan, Indonesia, and its Chrome 152.0.7977.167 user agent matches the operator browser used for these measurements.
 - Clerk `Secured by` footer removal and MFA/admin 2FA require a Pro plan.
 - Live two-user ownership isolation check remains NOT PERFORMED because only one production user is available.
