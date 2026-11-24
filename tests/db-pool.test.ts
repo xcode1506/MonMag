@@ -4,6 +4,7 @@ import {
   IDLE_TIMEOUT_MS,
   MAX_POOL_CONNECTIONS,
   buildPoolConfig,
+  toServerlessConnectionString,
 } from "@/lib/db-pool-config";
 
 describe("serverless database pool configuration", () => {
@@ -27,5 +28,44 @@ describe("serverless database pool configuration", () => {
       idleTimeoutMillis: IDLE_TIMEOUT_MS,
       connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
     });
+  });
+
+  it("routes Supabase session-pooler traffic to the transaction pooler", () => {
+    const sessionUrl =
+      "postgresql://postgres.project:secret@aws-0-region.pooler.supabase.com:5432/postgres";
+
+    const result = toServerlessConnectionString(sessionUrl);
+
+    expect(new URL(result).port).toBe("6543");
+    expect(new URL(result).hostname).toBe(
+      "aws-0-region.pooler.supabase.com",
+    );
+    expect(new URL(result).username).toBe("postgres.project");
+    expect(new URL(result).password).toBe("secret");
+  });
+
+  it("leaves an already-correct transaction-pooler URL unchanged", () => {
+    const transactionUrl =
+      "postgresql://postgres.project:secret@aws-0-region.pooler.supabase.com:6543/postgres";
+
+    expect(toServerlessConnectionString(transactionUrl)).toBe(transactionUrl);
+  });
+
+  it("does not rewrite direct Supabase or non-Supabase connection strings", () => {
+    const directUrl =
+      "postgresql://postgres:secret@db.project.supabase.co:5432/postgres";
+    const otherUrl = "postgresql://user:secret@localhost:5432/app";
+
+    expect(toServerlessConnectionString(directUrl)).toBe(directUrl);
+    expect(toServerlessConnectionString(otherUrl)).toBe(otherUrl);
+  });
+
+  it("normalizes the connection string used by the pg pool", () => {
+    const sessionUrl =
+      "postgresql://postgres.project:secret@aws-0-region.pooler.supabase.com:5432/postgres";
+
+    expect(buildPoolConfig(sessionUrl).connectionString).toBe(
+      toServerlessConnectionString(sessionUrl),
+    );
   });
 });
