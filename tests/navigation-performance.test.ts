@@ -47,4 +47,33 @@ describe("dashboard navigation responsiveness", () => {
     expect(auth).toContain('from "react"');
     expect(auth).toMatch(/export const getCurrentUser = cache\(/);
   });
+
+  it("prefetches full route data for every primary navigation link", () => {
+    const chrome = source("src/components/layout/app-chrome.tsx");
+    expect(chrome.match(/prefetch=\{true\}/g)).toHaveLength(3);
+
+    const moreMenu = source("src/components/layout/mobile-more-menu.tsx");
+    expect(moreMenu).toContain("prefetch={true}");
+  });
+
+  it("caches authenticated page content so revisits resolve from the client router cache", () => {
+    const pages = [
+      "dashboard",
+      "transactions",
+      "accounts",
+      "budgets",
+      "goals",
+      "debts",
+      "recurring",
+      "reports",
+      "notifications",
+      "settings",
+    ];
+    for (const page of pages) {
+      const content = source(`src/app/(app)/${page}/page.tsx`);
+      expect(content, page).toContain('use cache: private');
+      expect(content, page).toContain('from "next/cache"');
+      expect(content, page).toMatch(/cacheLife\(\{ stale: \d+ \}\)/);
+    }
+  });
 });
