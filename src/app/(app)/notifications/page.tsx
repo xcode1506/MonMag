@@ -11,7 +11,7 @@ import { localeOf } from "@/lib/ui";
 
 async function NotificationsContent() {
   "use cache: private";
-  cacheLife({ stale: 60 });
+  cacheLife({ stale: 300 });
 
   const user = await requireUser();
   const { items, unread } = await listNotifications(user.id);

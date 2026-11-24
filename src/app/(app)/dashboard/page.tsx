@@ -61,7 +61,7 @@ function FocusFigure({
 
 async function DashboardContent() {
   "use cache: private";
-  cacheLife({ stale: 60 });
+  cacheLife({ stale: 300 });
 
   const user = await requireUser();
   const locale = localeOf(user.preferredLanguage);

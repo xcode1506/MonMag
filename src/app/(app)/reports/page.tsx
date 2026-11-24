@@ -23,7 +23,7 @@ import { amountInput, localeOf, money } from "@/lib/ui";
 
 async function ReportsContent() {
   "use cache: private";
-  cacheLife({ stale: 60 });
+  cacheLife({ stale: 300 });
 
   const user = await requireUser();
   const locale = localeOf(user.preferredLanguage);

@@ -9,7 +9,7 @@ import { amountInput, localeOf } from "@/lib/ui";
 
 async function DebtsContent() {
   "use cache: private";
-  cacheLife({ stale: 60 });
+  cacheLife({ stale: 300 });
 
   const user = await requireUser();
   const debts = await listDebts(user.id);

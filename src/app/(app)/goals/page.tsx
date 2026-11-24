@@ -9,7 +9,7 @@ import { amountInput, localeOf } from "@/lib/ui";
 
 async function GoalsContent() {
   "use cache: private";
-  cacheLife({ stale: 60 });
+  cacheLife({ stale: 300 });
 
   const user = await requireUser();
   const goals = await listGoals(user.id);

@@ -12,7 +12,7 @@ import { toRecurringRow } from "@/lib/view-models/recurring";
 
 async function RecurringContent() {
   "use cache: private";
-  cacheLife({ stale: 60 });
+  cacheLife({ stale: 300 });
 
   const user = await requireUser();
   const [rules, accounts, categories] = await Promise.all([

@@ -18,7 +18,7 @@ function first(value: string | string[] | undefined): string {
 
 async function TransactionsContent({ searchParams }: { searchParams: SearchParams }) {
   "use cache: private";
-  cacheLife({ stale: 60 });
+  cacheLife({ stale: 300 });
 
   const params = await searchParams;
   const user = await requireUser();

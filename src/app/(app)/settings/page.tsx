@@ -8,7 +8,7 @@ import { localeOf } from "@/lib/ui";
 
 async function SettingsContent() {
   "use cache: private";
-  cacheLife({ stale: 60 });
+  cacheLife({ stale: 300 });
 
   const user = await requireUser();
   const accounts = await listAccounts(user.id);

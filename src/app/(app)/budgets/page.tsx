@@ -10,7 +10,7 @@ import { amountInput, localeOf } from "@/lib/ui";
 
 async function BudgetsContent() {
   "use cache: private";
-  cacheLife({ stale: 60 });
+  cacheLife({ stale: 300 });
 
   const user = await requireUser();
   const [budgets, categories] = await Promise.all([
