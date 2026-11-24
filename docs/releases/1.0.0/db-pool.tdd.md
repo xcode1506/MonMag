@@ -104,6 +104,57 @@ npm run build           -> PASS (19 routes)
 
 The coverage configuration does not include `src/lib/db-pool-config.ts`, `src/lib/prisma.ts`, or `src/lib/auth.ts`; the suite-level coverage above is unchanged at 99.2% statements / 91.93% branches / 100% functions / 99.71% lines. The new unit tests directly exercise the extracted pool config and the race-handling branch. Live pool behavior must still be verified in production after deployment.
 
+## Follow-up: Supabase session pooler versus transaction pooler
+
+After commit `0266ffb` was deployed, authenticated pages mostly loaded but `/transactions` failed intermittently with a second database error:
+
+```text
+Error: timeout exceeded when trying to connect ... clientVersion: '7.10.1', digest: '4038201410'
+```
+
+The stored production `DATABASE_URL` still pointed at Supabase's shared session pooler on port `5432`. Supabase documents port `6543` as the transaction pooler intended for serverless workloads; on this project's free compute tier the transaction pooler allows 200 clients, while the session pooler observed above is capped at `pool_size: 15`. The credential itself was not changed, printed, staged, or committed.
+
+### RED evidence
+
+Added regression tests to `tests/db-pool.test.ts` for session-to-transaction routing. Before the implementation:
+
+```text
+FAIL tests/db-pool.test.ts (8 tests | 4 failed)
+TypeError: toServerlessConnectionString is not a function
+```
+
+Checkpoint commit: `015a328 test: add Supabase session-pooler routing regression`.
+
+### Fix
+
+`src/lib/db-pool-config.ts` now normalizes Supabase `*.pooler.supabase.com` URLs from the session port `5432` to the transaction port `6543` before handing the connection string to `pg.PrismaPg`. Direct Supabase URLs, non-Supabase URLs, malformed values, and already-correct transaction URLs are left unchanged.
+
+Checkpoint commit: `eee2eb7 fix: route Supabase serverless traffic through transaction pooler`.
+
+### GREEN evidence
+
+```text
+npm test -- tests/db-pool.test.ts   -> PASS (8 tests)
+npm run typecheck                   -> PASS
+npm run lint                        -> PASS
+npm test                            -> PASS (31 files, 322 tests)
+npm run test:coverage               -> PASS (Statements 99.2%, Branches 91.93%, Functions 100%, Lines 99.71%)
+npm run build                       -> PASS (19 routes)
+npm audit --audit-level=high        -> PASS (0 vulnerabilities)
+npm run deploy:check (dummy values) -> PASS
+```
+
+A direct `pg.Pool` check using the existing local credentials and `buildPoolConfig()` returned `{"ok":1,"runtimePort":"6543"}` without revealing the connection string.
+
+Additional guarantees:
+
+| # | What is guaranteed | Test file or command | Test type | Result |
+|---|--------------------|----------------------|-----------|--------|
+| 8 | Supabase session-pooler traffic is rewritten to the transaction pooler port | `tests/db-pool.test.ts: routes Supabase session-pooler traffic to the transaction pooler` | unit | PASS |
+| 9 | Already-correct transaction URLs are unchanged | `tests/db-pool.test.ts: leaves an already-correct transaction-pooler URL unchanged` | unit | PASS |
+| 10 | Direct Supabase and non-Supabase URLs are not rewritten | `tests/db-pool.test.ts: does not rewrite direct Supabase or non-Supabase connection strings` | unit | PASS |
+| 11 | The pg pool uses the normalized connection string | `tests/db-pool.test.ts: normalizes the connection string used by the pg pool` | unit | PASS |
+
 ## Target acceptance
 
-Not yet performed at the time of this report. Next step: deploy commit `0266ffb` to Vercel Production, then re-check authenticated `/reports`, `/settings`, and `/api/transactions/export`, and confirm no new `XX000` or React `#441` errors in Vercel Runtime Logs.
+Not yet performed for commit `eee2eb7`. Next step: push and deploy, then re-check authenticated `/transactions`, `/reports`, `/settings`, and `/api/transactions/export`, and confirm Vercel Runtime Logs show no new `XX000`, `timeout exceeded when trying to connect`, or React `#441` errors.
